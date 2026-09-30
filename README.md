@@ -218,7 +218,7 @@ Lib:SetAutoLoad("pvp")  -- load this config at every launch (writes <folder>/_au
 ```
 
 Everything with a value is saved: widgets, keybinds, theme, font, layout and appearance.
-Configs go in `<configFolder>/<name>.json`, or `INSui_<title>/` without a `configFolder`.
+Configs go in `<configFolder>/<name>.json`, or `INSUI/<title>/` without a `configFolder`.
 Keys are `"Tab.Section.Row"`, so renaming a row loses its saved value.
 
 ## Game input
@@ -264,6 +264,31 @@ warning world x zap
 ```
 
 `logo`, `icon` and the background take a URL, a file from the workspace folder, or raw PNG bytes.
+
+## Auto-execute (loader)
+
+Put [loader.lua](loader.lua) in Matcha's auto-execute folder (`C:/matcha/autoexec`) once. Then, in each
+script, after the window is built:
+
+```lua
+Lib:RegisterAutoexec({
+    name   = "MyHub",
+    label  = "Some Game",                  -- shown next to the toggle
+    games  = { 1234567890 },               -- universe ids (game.GameId): every place of the game
+    places = { 9876543210 },               -- and/or exact place ids
+    source = "Some Game/MyHub/myhub.lua",  -- workspace path the loader reads
+    url    = "https://raw.githubusercontent.com/you/myhub-loader/main/MyHub.lua",  -- used when source is missing
+})
+```
+
+The list lives in `INSUI/autoexec.json`. Every INSUI script's settings tab shows an **Auto-execute** section
+with a master switch and one toggle per script, and a new entry starts on. The loader waits for the game to
+load, then runs each enabled script whose `games` or `places` match.
+
+## Files
+
+Everything INSUI writes is under `INSUI/` in the workspace: `INSUI/<configFolder or title>/` for configs
+(pass `configFolder = "INSUI/MyHub"`), `INSUI/cache/` for pictures, and `INSUI/autoexec.json`.
 
 ## Unload cleanly
 

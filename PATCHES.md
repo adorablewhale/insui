@@ -48,11 +48,18 @@ in Matcha on 2026-09-30.
 | 17 | `SectionClass:Paragraph`, `:Progressbar` and `:Space` called `AddRow` before it was declared, so all three errored. The `Progress` and `Space` row kinds also had no height and no drawer. | They are defined after `AddRow`. `Paragraph` is an Info row. `Progressbar(name, v)` is a live text bar on a Label row (`row:Set(0..1)` moves it). `Space(h)` is an empty row. |
 | 18 | The README says box lines accept a function, but the function itself got printed as text ("function: 0x..."). | `Fix.BoxValue` calls it every frame, for Text, Stat and Bar lines. |
 
+## Added by the fork
+
+| # | What | How |
+|---|---|---|
+| 19 | Everything INSUI writes was scattered over the workspace root (`INSui_<title>/`, `INSui_av_*.dat`, `INSui_img_*.dat`). | It all lives under `INSUI/`: `INSUI/<title or configFolder>/` for configs, `INSUI/cache/` for pictures. `configFolder` may be nested (`"INSUI/MyHub"`), and each part is cleaned on its own. Parent folders are created as needed. |
+| 20 | No way to control which scripts auto-execute. | `lib:RegisterAutoexec{ name, label, games, places, source, url }` writes `INSUI/autoexec.json`. The settings tab gets an **Auto-execute** section with a master switch and one toggle per registered script. `loader.lua` goes in Matcha's autoexec folder and runs the enabled scripts whose universe id (`games`) or place id (`places`) matches the game you join. |
+
 ## Housekeeping
 
 - The fork's helpers live on one `Fix` table. Matcha refuses a chunk with more than
   200 top-level locals; upstream has 192 and this file has 193.
-- `InsUi.Version = "j5cks-1.0.0"`. Bump it with every change.
+- `InsUi.Version = "j5cks-1.1.0"`. Bump it with every change.
 
 ## Not in the upstream README's code
 

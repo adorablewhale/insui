@@ -38,6 +38,29 @@ local Newline = string.char(10)
 -- helpers added by the fork live on one table, so they cost one top-level local
 local Fix = {}
 
+-- FIX: everything INSUI writes lives under one workspace folder:
+--   INSUI/<configFolder or title>/   configs, _autoload.json, _autosave.json
+--   INSUI/cache/                     avatar and picture caches
+--   INSUI/autoexec.json              which scripts the autoexec loader runs (see loader.lua)
+Fix.Root = "INSUI"
+Fix.AutoexecFile = "INSUI/autoexec.json"
+
+-- makefolder for every level of a/b/c
+function Fix.MakeDirs(path)
+  local At = ""
+  for Part in string.gmatch(tostring(path), "[^/\]+") do
+    At = At == "" and Part or (At .. "/" .. Part)
+    if not isfolder(At) then makefolder(At) end
+  end
+end
+
+function Fix.WriteCache(path, bytes)
+  pcall(function()
+    Fix.MakeDirs(Fix.Root .. "/cache")
+    writefile(path, bytes)
+  end)
+end
+
 -- FIX: a box line's value may be a function (re-read every frame), as the README documents
 function Fix.BoxValue(line)
   local V = line.Value
@@ -1171,7 +1194,7 @@ do
 
     for Index = 1, #target do Hash = (Hash * 33 + string.byte(target, Index)) % 2147483648 end
 
-    local Cache = LibName .. "_" .. kind .. "_" .. string.format("%08x", Hash) .. ".dat"
+    local Cache = Fix.Root .. "/cache/" .. kind .. "_" .. string.format("%08x", Hash) .. ".dat"
 
     local Remote = string.find(target, "://", 1, true) ~= nil
 
@@ -1192,7 +1215,7 @@ do
     local Bytes = Fix.HttpGet(target)
     if not (Bytes and IsPicture(Bytes)) then return nil end
 
-    writefile(Cache, Bytes)
+    Fix.WriteCache(Cache, Bytes)
 
     return Bytes
   end
@@ -1227,7 +1250,7 @@ do
     local Id = ResolveUserId()
     if not Id then return end
 
-    local Cache = LibName .. "_av_" .. Id .. ".dat"
+    local Cache = Fix.Root .. "/cache/av_" .. Id .. ".dat"
 
     if isfile(Cache) then
       local Bytes = readfile(Cache)
@@ -1244,7 +1267,7 @@ do
           local Bytes = Fix.HttpGet((string.gsub(Url, "\/", "/")))
 
           if Bytes and IsPicture(Bytes) then
-            writefile(Cache, Bytes)
+            Fix.WriteCache(Cache, Bytes)
 
             return { Image = MakeImage(Bytes) }
           end
@@ -1400,7 +1423,7 @@ local State = {
   MenuKey = "P",
   Alive = true,
   Frame = 0,
-  Folder = LibName .. "_configs",
+  Folder = "INSUI/configs",
   CheckboxStyle = false,
   Rainbow = false,
   RainbowSpeed = 0.3,
@@ -4389,8 +4412,14 @@ do
   end
 
 
+  -- FIX: a config folder may be nested ("INSUI/MyHub"); each part is cleaned on its own
   function SafeFolder(name)
-    return (tostring(name):gsub("[^%w%-_ ]", ""):gsub("^%s+", ""):gsub("%s+$", ""))
+    local Parts = {}
+    for Part in string.gmatch(tostring(name), "[^/\]+") do
+      Part = Part:gsub("[^%w%-_ ]", ""):gsub("^%s+", ""):gsub("%s+$", "")
+      if Part ~= "" then Parts[#Parts + 1] = Part end
+    end
+    return table.concat(Parts, "/")
   end
 
 
@@ -4401,9 +4430,7 @@ end
 
 
 local function EnsureFolder()
-  local Dir = ConfigDir()
-
-  if not isfolder(Dir) then makefolder(Dir) end
+  Fix.MakeDirs(ConfigDir())
 end
 
 
@@ -4532,7 +4559,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.0.0" }
+local InsUi = { _state = State, Version = "j5cks-1.1.0" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -4555,7 +4582,7 @@ function InsUi:CreateWindow(config)
   if config.subtitle == "auto" then task.spawn(function() State.Subtitle = PlaceName() end) end
 
   State.ConfigName = config.configName or State.ConfigName
-  State.Folder = config.configFolder and SafeFolder(config.configFolder) or (LibName .. "_" .. SafeFolder(State.Title))
+  State.Folder = config.configFolder and SafeFolder(config.configFolder) or (Fix.Root .. "/" .. SafeFolder(State.Title))
   State.W = config.size and config.size.X or Layout.WindowSize.X
   State.H = config.size and config.size.Y or Layout.WindowSize.Y
   State.X = config.position and config.position.X or math.floor(Camera.ViewportSize.X / 2 - State.W / 2)
@@ -5347,6 +5374,29 @@ function InsUi:Destroy()
   end
 
   return self
+end
+
+
+--- Register this script with the autoexec loader (INSUI/autoexec.json).
+--- entry = { name = "MyHub", label = "Some Game", games = { universeId }, places = { placeId },
+---           source = "Game/MyHub.lua" (workspace path), url = "https://..." (used when source is missing) }
+--- The user's on/off choice is kept; a new entry starts on unless entry.enabled == false.
+function InsUi:RegisterAutoexec(entry)
+  if type(entry) ~= "table" or type(entry.name) ~= "string" then return self end
+  local Data = Fix.ReadAutoexec()
+  local Old = Data.scripts[entry.name]
+  local New = { name = entry.name, label = entry.label, games = entry.games or {}, places = entry.places or {},
+    source = entry.source, url = entry.url }
+  if Old and Old.enabled ~= nil then New.enabled = Old.enabled else New.enabled = entry.enabled ~= false end
+  Data.scripts[entry.name] = New
+  Fix.WriteAutoexec(Data)
+  Fix.AutoexecRow(entry.name)
+  return self
+end
+
+
+function InsUi:GetAutoexec()
+  return Fix.ReadAutoexec()
 end
 
 
@@ -6503,6 +6553,67 @@ do
 end
 
 
+-- FIX (new): Auto-execute. INSUI/autoexec.json lists scripts that registered themselves with
+-- lib:RegisterAutoexec{...}; loader.lua (in Matcha's autoexec folder) runs the enabled ones
+-- whose games / places match the game you join. This section turns them on and off.
+function Fix.ReadAutoexec()
+  local Ok, Data = pcall(function()
+    if not isfile(Fix.AutoexecFile) then return nil end
+    return HttpService:JSONDecode(readfile(Fix.AutoexecFile))
+  end)
+  if not Ok or type(Data) ~= "table" then Data = {} end
+  if Data.enabled == nil then Data.enabled = true end
+  if type(Data.scripts) ~= "table" then Data.scripts = {} end
+  return Data
+end
+
+
+function Fix.WriteAutoexec(data)
+  pcall(function()
+    Fix.MakeDirs(Fix.Root)
+    writefile(Fix.AutoexecFile, HttpService:JSONEncode(data))
+  end)
+end
+
+
+function Fix.AutoexecLabel(entry)
+  return tostring(entry.name) .. (entry.label and ("  (" .. tostring(entry.label) .. ")") or "")
+end
+
+
+function Fix.AutoexecRow(name)
+  local Panel = State.AutoexecPanel
+  if not Panel then return end
+  State.AutoexecRows = State.AutoexecRows or {}
+  if State.AutoexecRows[name] then return end
+  local Entry = Fix.ReadAutoexec().scripts[name] or { name = name }
+  local Row = Panel:Toggle(Fix.AutoexecLabel(Entry), Entry.enabled ~= false, function(on)
+    local Data = Fix.ReadAutoexec()
+    local E = Data.scripts[name]
+    if E then E.enabled = on == true Fix.WriteAutoexec(Data) end
+  end, "run " .. tostring(name) .. " automatically when you join its game")
+  Row.NoSave = true
+  State.AutoexecRows[name] = Row
+end
+
+
+function Fix.AutoexecSection(tab)
+  local Panel = tab:Section("Auto-execute", "Left", "loader.lua in Matcha's autoexec folder")
+  State.AutoexecPanel = Panel
+  local Data = Fix.ReadAutoexec()
+  Panel:Toggle("Auto-execute on join", Data.enabled ~= false, function(on)
+    local D = Fix.ReadAutoexec()
+    D.enabled = on == true
+    Fix.WriteAutoexec(D)
+  end, "master switch: off = the loader runs nothing").NoSave = true
+  local Names = {}
+  for Name in pairs(Data.scripts) do Names[#Names + 1] = Name end
+  table.sort(Names)
+  for _, Name in ipairs(Names) do Fix.AutoexecRow(Name) end
+  Panel:Info("Each script runs only in its own game. Copy loader.lua from github.com/j5cks/insui into C:/matcha/autoexec once.")
+end
+
+
 function BuildSettingsTab(window, icon)
   EnsureFolder()
 
@@ -6517,6 +6628,7 @@ function BuildSettingsTab(window, icon)
   InterfaceSection(Tab)
   ConfigSection(Tab)
   SystemSection(Tab)
+  Fix.AutoexecSection(Tab)
 
   return Tab
 end
