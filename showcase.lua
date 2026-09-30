@@ -1,4 +1,4 @@
-local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/j5cks/insui/main/insui.lua"))() or INSUI
+local Lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/adorablewhale/insui/main/insui.lua"))() or INSUI
 
 local Players = game:GetService("Players")
 
@@ -10,7 +10,7 @@ local win = Lib:CreateWindow({
     smartFps = false,
     checkboxStyle = true,
     opacity  = 98,
-    logo     = "https://raw.githubusercontent.com/j5cks/insui/main/assets/logo.png",
+    logo     = "https://raw.githubusercontent.com/adorablewhale/insui/main/assets/logo.png",
 })
 
 win:AddSettingsTab("gear")

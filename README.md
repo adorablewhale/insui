@@ -1,4 +1,4 @@
-# INSUI (j5cks fork)
+# INSUI (adorablewhale fork)
 
 ![preview](assets/preview.png)
 
@@ -11,7 +11,7 @@ lines, and more. See **[PATCHES.md](PATCHES.md)** for the full list.
 ## Load
 
 ```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/j5cks/insui/main/insui.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/adorablewhale/insui/main/insui.lua"))()
 local Lib = _G.INSUI
 ```
 

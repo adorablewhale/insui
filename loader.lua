@@ -1,5 +1,5 @@
 --[[
-  INSUI autoexec loader (github.com/j5cks/insui)
+  INSUI autoexec loader (github.com/adorablewhale/insui)
 
   Put this file in Matcha's auto-execute folder (C:/matcha/autoexec) once.
   When you join a game it reads INSUI/autoexec.json from the workspace and runs
@@ -28,9 +28,15 @@ task.spawn(function()
   if cfg.enabled == false then say("auto-execute is off (gear tab > Auto-execute)") return end
 
   local place, universe = game.PlaceId, game.GameId
+  -- ids are text in autoexec.json (Matcha's JSONDecode wraps big whole numbers without a .0), compared as text
+  local function idText(v)
+    local n = tonumber(v)
+    return n and string.format("%.0f", n) or nil
+  end
   local function matches(list, id)
-    for _, v in ipairs(list or {}) do
-      if tonumber(v) == id then return true end
+    local want = idText(id)
+    for _, v in ipairs(type(list) == "table" and list or {}) do
+      if idText(v) == want then return true end
     end
     return false
   end

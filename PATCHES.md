@@ -59,7 +59,7 @@ in Matcha on 2026-09-30.
 
 - The fork's helpers live on one `Fix` table. Matcha refuses a chunk with more than
   200 top-level locals; upstream has 192 and this file has 193.
-- `InsUi.Version = "j5cks-1.1.0"`. Bump it with every change.
+- `InsUi.Version = "j5cks-1.1.1"`. Bump it with every change.
 
 ## Not in the upstream README's code
 

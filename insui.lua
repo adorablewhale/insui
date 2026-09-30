@@ -1,7 +1,7 @@
--- INSUI (j5cks fork) -- a Drawing-based UI library for the Matcha executor.
+-- INSUI (adorablewhale fork) -- a Drawing-based UI library for the Matcha executor.
 -- Upstream: github.com/neaxusxgod-png/INS-ui @ 506859d (uilib.min.lua).
--- This fork: github.com/j5cks/insui -- every fix is listed in PATCHES.md.
--- Load:  local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/j5cks/insui/main/insui.lua"))()
+-- This fork: github.com/adorablewhale/insui -- every fix is listed in PATCHES.md.
+-- Load:  local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/adorablewhale/insui/main/insui.lua"))()
 --        (Matcha's loadstring drops return values: if lib is nil, use _G.INSUI.)
 local HttpService = game:GetService("HttpService")
 local Camera = workspace.CurrentCamera
@@ -4559,7 +4559,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.1.0" }
+local InsUi = { _state = State, Version = "j5cks-1.1.1" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -5385,7 +5385,18 @@ function InsUi:RegisterAutoexec(entry)
   if type(entry) ~= "table" or type(entry.name) ~= "string" then return self end
   local Data = Fix.ReadAutoexec()
   local Old = Data.scripts[entry.name]
-  local New = { name = entry.name, label = entry.label, games = entry.games or {}, places = entry.places or {},
+  -- ids are stored as TEXT: Matcha's JSONDecode reads a whole number past 2^31 written without a
+  -- decimal point as 32-bit ("5750914919" -> 1455947623; "5750914919.0" is fine), so a hand-edited
+  -- or foreign-written file could corrupt them
+  local function Ids(list)
+    local Out = {}
+    for _, V in ipairs(list or {}) do
+      local N = tonumber(V)
+      if N then Out[#Out + 1] = string.format("%.0f", N) end
+    end
+    return Out
+  end
+  local New = { name = entry.name, label = entry.label, games = Ids(entry.games), places = Ids(entry.places),
     source = entry.source, url = entry.url }
   if Old and Old.enabled ~= nil then New.enabled = Old.enabled else New.enabled = entry.enabled ~= false end
   Data.scripts[entry.name] = New
@@ -6610,7 +6621,7 @@ function Fix.AutoexecSection(tab)
   for Name in pairs(Data.scripts) do Names[#Names + 1] = Name end
   table.sort(Names)
   for _, Name in ipairs(Names) do Fix.AutoexecRow(Name) end
-  Panel:Info("Each script runs only in its own game. Copy loader.lua from github.com/j5cks/insui into C:/matcha/autoexec once.")
+  Panel:Info("Each script runs only in its own game. Copy loader.lua from github.com/adorablewhale/insui into C:/matcha/autoexec once.")
 end
 
 
