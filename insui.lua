@@ -1,3 +1,8 @@
+-- INSUI (j5cks fork) -- a Drawing-based UI library for the Matcha executor.
+-- Upstream: github.com/neaxusxgod-png/INS-ui @ 506859d (uilib.min.lua).
+-- This fork: github.com/j5cks/insui -- every fix is listed in PATCHES.md.
+-- Load:  local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/j5cks/insui/main/insui.lua"))()
+--        (Matcha's loadstring drops return values: if lib is nil, use _G.INSUI.)
 local HttpService = game:GetService("HttpService")
 local Camera = workspace.CurrentCamera
 local Players = game:GetService("Players")
@@ -5,13 +10,13 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 local Fonts = Drawing.Fonts
-local SystemFont = Fonts.System
-local BoldFont = Fonts.SystemBold
-local MonoFont = Fonts.Monospace
-local UiFont = Fonts.UI
-local MinecraftFont = Fonts.Minecraft
-local PixelFont = Fonts.Pixel
-local FortniteFont = Fonts.Fortnite
+local SystemFont = Fonts and Fonts.System or 1
+local BoldFont = Fonts and (Fonts.SystemBold or Fonts.System) or 1
+local MonoFont = Fonts and Fonts.Monospace or 3
+local UiFont = Fonts and Fonts.UI or 0
+local MinecraftFont = Fonts and (Fonts.Minecraft or Fonts.System) or 1
+local PixelFont = Fonts and (Fonts.Pixel or Fonts.System) or 1
+local FortniteFont = Fonts and (Fonts.Fortnite or Fonts.System) or 1
 
 local FontWidth = {
   [SystemFont] = 0.48,
@@ -30,10 +35,22 @@ local Black = Color3.fromRGB(0, 0, 0)
 local AccentA = Color3.fromRGB(122, 134, 255)
 local AccentB = Color3.fromRGB(189, 130, 255)
 local Newline = string.char(10)
+-- helpers added by the fork live on one table, so they cost one top-level local
+local Fix = {}
+
+-- FIX: a box line's value may be a function (re-read every frame), as the README documents
+function Fix.BoxValue(line)
+  local V = line.Value
+  if type(V) == "function" then
+    local Ok, R = pcall(V)
+    V = Ok and R or ""
+  end
+  return V
+end
 
 local ChipHint = "click rebind (any key / mouse)  " .. string.char(194, 183) .. "  right-click mode"
-local SearchHint = "Search  " .. string.char(194, 183) .. "  Ctrl+Space"
-local SpotHint = "Ctrl+Space"
+local SearchHint = "Search"
+local SpotHint = "Search"
 local Instance = {}
 
 _G[LibName .. "Instance"] = Instance
@@ -1110,6 +1127,25 @@ local EffectNames = { "Off", "Snow", "Matrix", "Rain" }
 
 local LoadPicture, DrawPicture, HidePicture, FetchAvatar
 
+function Fix.HttpGet(url)
+  if not url then return nil end
+  local ok, res = pcall(function()
+    if type(game) == "userdata" or type(game) == "table" then
+      return game:HttpGet(url)
+    end
+  end)
+  if ok and type(res) == "string" then return res end
+  if type(httpget) == "function" then
+    local ok2, res2 = pcall(httpget, url)
+    if ok2 and type(res2) == "string" then return res2 end
+  end
+  if type(request) == "function" then
+    local ok3, res3 = pcall(request, { Url = url, Method = "GET" })
+    if ok3 and type(res3) == "table" and type(res3.Body) == "string" then return res3.Body end
+  end
+  return nil
+end
+
 do
   local function IsPicture(bytes)
     if type(bytes) ~= "string" or #bytes < 24 then return false end
@@ -1153,8 +1189,8 @@ do
 
     if not Remote then return nil end
 
-    local Bytes = httpget(target)
-    if not IsPicture(Bytes) then return nil end
+    local Bytes = Fix.HttpGet(target)
+    if not (Bytes and IsPicture(Bytes)) then return nil end
 
     writefile(Cache, Bytes)
 
@@ -1201,12 +1237,13 @@ do
 
     for _ = 1, 5 do
       for _, Pattern in ipairs(AvatarSizes) do
-        local Url = string.match(httpget(string.format(Pattern, Id)), '"imageUrl":"([^"]+)"')
+        local Resp = Fix.HttpGet(string.format(Pattern, Id))
+        local Url = Resp and string.match(Resp, '"imageUrl":"([^"]+)"')
 
         if Url then
-          local Bytes = httpget((string.gsub(Url, "\/", "/")))
+          local Bytes = Fix.HttpGet((string.gsub(Url, "\/", "/")))
 
-          if IsPicture(Bytes) then
+          if Bytes and IsPicture(Bytes) then
             writefile(Cache, Bytes)
 
             return { Image = MakeImage(Bytes) }
@@ -1282,12 +1319,30 @@ local DrawMenuBars
 local BarTint = Color3.fromRGB(36, 38, 50)
 
 
+function Fix.Mouse1Down()
+  if type(ismouse1pressed) == "function" then
+    local ok, res = pcall(ismouse1pressed)
+    if ok and type(res) == "boolean" then return res end
+  end
+  local uis = game:GetService("UserInputService")
+  return uis:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+end
+
+function Fix.Mouse2Down()
+  if type(ismouse2pressed) == "function" then
+    local ok, res = pcall(ismouse2pressed)
+    if ok and type(res) == "boolean" then return res end
+  end
+  local uis = game:GetService("UserInputService")
+  return uis:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+end
+
 local function ReadInput()
   local WasDown, WasRight = Input.Down, Input.RightDown
 
   Input.X, Input.Y = Mouse.X, Mouse.Y
-  Input.Down = ismouse1pressed()
-  Input.RightDown = ismouse2pressed()
+  Input.Down = Fix.Mouse1Down()
+  Input.RightDown = Fix.Mouse2Down()
   Input.Click = Input.Down and not WasDown
   Input.Right = Input.RightDown and not WasRight
   Input.Up = WasDown and not Input.Down
@@ -1395,7 +1450,7 @@ local KeyOrder = {}
 
 do
   local function AddKey(name, code, char, shifted)
-    Keys[name] = { Code = code, Held = false, Click = false, Char = char, Shifted = shifted }
+    Keys[name] = { Name = name, Code = code, Held = false, Click = false, Char = char, Shifted = shifted }
     KeyOrder[#KeyOrder + 1] = name
   end
 
@@ -1443,6 +1498,8 @@ AddKey("RightShift", 0xA1)
   AddKey("Period", 0xBE, ".", ">")
   AddKey("Slash", 0xBF, "/", "?")
 end
+-- FIX: keys are registered as "F1", "Enter", "Space"... but binds are looked up lowercase
+for _, Name in ipairs(KeyOrder) do Keys[string.lower(Name)] = Keys[Name] end
 
 
 local function ReleaseDrags()
@@ -1462,9 +1519,29 @@ end
 
 
 local function ReadKeys()
+  local uis = game:GetService("UserInputService")
   for Index = 1, #KeyOrder do
     local Key = Keys[KeyOrder[Index]]
-    local Held = iskeypressed(Key.Code)
+    local Held = false
+    if type(iskeypressed) == "function" then
+      local ok, res = pcall(iskeypressed, Key.Code)
+      if ok and type(res) == "boolean" then Held = res end
+    else
+      local nm = Key.Name or KeyOrder[Index]
+      if nm == "m1" then
+        Held = uis:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+      elseif nm == "m2" then
+        Held = uis:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+      elseif nm == "mb3" then
+        Held = uis:IsMouseButtonPressed(Enum.UserInputType.MouseButton3)
+      else
+        local ok, kc = pcall(function() return Enum.KeyCode[nm] or Enum.KeyCode[string.upper(nm)] end)
+        if ok and kc then
+          local ok2, res = pcall(function() return uis:IsKeyDown(kc) end)
+          if ok2 and type(res) == "boolean" then Held = res end
+        end
+      end
+    end
 
     Key.Click = Held and not Key.Held
     Key.Held = Held
@@ -2091,6 +2168,10 @@ end
 
 
 local function Minimize()
+  -- FIX: minimize hides the window outright (no 3-line bubble); the menu key brings it back
+  State.Open = false
+  State.Dropdown, State.Picker, State.Menu, State.Focus = nil, nil, nil, nil
+  if true then return end
   State.Rolled = not State.Rolled
 
   if not State.Rolled then return end
@@ -3568,6 +3649,7 @@ local function RowSpan(row)
   if row.Kind == "Dropdown" and State.DropdownInline then return Layout.DropdownInlineRow end
   if row.Kind == "Label" then return math.max(18, (row.LineCount or 1) * Layout.LabelLine + 2) end
   if row.Kind == "Info" then return math.max(16, (row.LineCount or 1) * Layout.InfoLine + 2) end
+  if row.Kind == "Space" then return row.Height or 10 end
 
   return RowHeight[row.Kind]
 end
@@ -3584,6 +3666,7 @@ local RowDrawer = {
   Textbox = DrawTextbox,
   Label = DrawLabel,
   Info = DrawInfo,
+  Space = function() end,
 }
 
 
@@ -3597,15 +3680,26 @@ do
   end
 
 
+  -- FIX: RowClass:SetVisible(false) sets Row.Hidden; the layout now skips hidden rows.
+  function Fix.VisibleRows(section)
+    local Out = {}
+    for _, Row in ipairs(section.Rows) do
+      if not Row.Hidden then Out[#Out + 1] = Row end
+    end
+    return Out
+  end
+
+
   local function SectionHeight(section)
     local Target = section.Collapsed and 1 or 0
     local Title = SectionTitleHeight(section)
     local Full = Title + Layout.CardTopPad + Layout.CardBottomPad
-    local Count = #section.Rows
+    local Shown = Fix.VisibleRows(section)
+    local Count = #Shown
 
     section.Fold = Approach(section.Fold or Target, Target, 10)
 
-    for Index, Row in ipairs(section.Rows) do
+    for Index, Row in ipairs(Shown) do
       Full = Full + RowSpan(Row)
       if Index < Count then Full = Full + Layout.RowGap end
     end
@@ -3696,9 +3790,10 @@ do
     local RowY = y + SectionTitleHeight(section) + Layout.CardTopPad
     local RowWidth = width - Layout.CardInset
     local Gap = State.RowLines and 4 or Layout.RowGap
-    local Count = #section.Rows
+    local Shown = Fix.VisibleRows(section)
+    local Count = #Shown
 
-    for Index, Row in ipairs(section.Rows) do
+    for Index, Row in ipairs(Shown) do
       local Height = RowSpan(Row)
 
       if Row == State.SpotJump then
@@ -3768,16 +3863,50 @@ do
   end
 
 
+  --[[
+    THERE IS NO MOUSE WHEEL TO READ.
+
+    Matcha exposes mousescroll(), which SYNTHESISES a wheel event, and nothing
+    that reads one. Its UserInputService stub carries only InputBegan,
+    InputEnded and IsKeyDown -- and a listener left on InputBegan through
+    several minutes of play caught zero events, so the signals are stubs too.
+    Roblox itself delivers the wheel through InputChanged, which is not there
+    at all. Windows has no virtual key for a wheel notch either, so
+    iskeypressed cannot see one. That is the whole reason this library polls
+    keys instead of connecting to anything.
+
+    So the wheel is genuinely unavailable, and dragging the bar was the only
+    way to move a long tab. Two more, both from state we CAN poll:
+
+      middle-button drag   hold MB3 anywhere over the list and move the mouse.
+                           Grabs the content, so dragging down moves the list
+                           down, the same direction as the wheel.
+      arrow / page keys    already worked, and now say so on the scrollbar.
+  ]]
   function ScrollInput(tab, x, y, width, height, blocked)
     local Reach = tab.MaxScroll
+    local Over = IsMouseIn(x, y, width, height)
 
-    if Reach > 0 and not blocked and not State.Focus and not State.SpotlightOpen and IsMouseIn(x, y, width, height) then
+    if Reach > 0 and not blocked and not State.Focus and not State.SpotlightOpen and Over then
       local Page = height * 0.8
 
       if Keys.Up.Click then tab.WantScroll = tab.WantScroll - 60 end
       if Keys.Down.Click then tab.WantScroll = tab.WantScroll + 60 end
       if Keys.PageUp.Click then tab.WantScroll = tab.WantScroll - Page end
       if Keys.PageDown.Click then tab.WantScroll = tab.WantScroll + Page end
+    end
+
+    -- middle-button grab. The anchor is taken on the press and the offset is
+    -- absolute from it, so a dropped frame cannot make the list creep.
+    if Reach > 0 and not blocked and Keys.mb3.Held and (Over or State.WheelDrag) then
+      if not State.WheelDrag then
+        State.WheelDrag = { Tab = tab, Y = Input.Y, From = tab.WantScroll }
+      end
+      if State.WheelDrag.Tab == tab then
+        tab.WantScroll = State.WheelDrag.From - (Input.Y - State.WheelDrag.Y)
+      end
+    elseif State.WheelDrag and not Keys.mb3.Held then
+      State.WheelDrag = nil
     end
 
     tab.WantScroll = math.min(math.max(tab.WantScroll, 0), Reach)
@@ -4403,7 +4532,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = {}
+local InsUi = { _state = State, Version = "j5cks-1.0.0" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -4433,9 +4562,14 @@ function InsUi:CreateWindow(config)
   State.Y = config.position and config.position.Y or math.floor(Camera.ViewportSize.Y / 2 - State.H / 2)
 
   ApplyOptions(config)
-  task.spawn(function() State.Avatar = FetchAvatar() end)
+  task.spawn(function()
+    local Avatar = FetchAvatar()
+    if State.Alive then State.Avatar = Avatar
+    elseif Avatar and Avatar.Image then pcall(function() Avatar.Image.Visible = false Avatar.Image:Remove() end) end
+  end)
 
   State.Open = config.startOpen ~= false
+  State.AutoSaveAfter = os.clock() + 3 -- let autoload apply before the first snapshot
 
   ApplyInputState(true)
 
@@ -4518,21 +4652,6 @@ end
 
 function WindowClass:SettingsSection(name, side, desc)
   return self:AddSettingsTab():Section(name, side or "Right", desc)
-end
-
-
-function SectionClass:Paragraph(title, body)
-  return AddRow(self, { Kind = "Info", Name = title .. Newline .. tostring(body or "") })
-end
-
-
-function SectionClass:Progressbar(name, value)
-  return AddRow(self, { Kind = "Progress", Name = name, Value = value or 0, Callback = function() end })
-end
-
-
-function SectionClass:Space(height)
-  return AddRow(self, { Kind = "Space", Height = height or 10 })
 end
 
 
@@ -4717,6 +4836,30 @@ local function AddRow(section, row)
   table.insert(section.Rows, setmetatable(row, RowClass))
 
   return section.Rows[#section.Rows]
+end
+
+
+-- FIX: these three called AddRow before it existed, and "Progress" / "Space" rows had no
+-- drawer or height. Paragraph is an Info row; Progressbar is a live text bar on a Label row
+-- (row:Set(0..1) moves it); Space is an empty row of the given height.
+function SectionClass:Paragraph(title, body)
+  return AddRow(self, { Kind = "Info", Name = title .. Newline .. tostring(body or "") })
+end
+
+
+function SectionClass:Progressbar(name, value)
+  local Row = { Kind = "Label", Name = tostring(name), Value = value or 0, NoSave = true, Callback = function() end }
+  Row.Source = function()
+    local V = math.min(math.max(tonumber(Row.Value) or 0, 0), 1)
+    local N = math.floor(V * 20 + 0.5)
+    return tostring(name) .. "  " .. string.rep("|", N) .. string.rep(".", 20 - N) .. "  " .. math.floor(V * 100 + 0.5) .. "%"
+  end
+  return AddRow(self, Row)
+end
+
+
+function SectionClass:Space(height)
+  return AddRow(self, { Kind = "Space", Height = height or 10, NoSave = true })
 end
 
 
@@ -4980,7 +5123,7 @@ function InsUi:ListConfigs()
   local Names = {}
 
   for _, File in ipairs(listfiles(ConfigDir())) do
-    local Name = string.match(File, "([^/\]+)%.json$")
+    local Name = string.match(File, "([^/\\]+)%.json$")
 
     if Name and string.sub(Name, 1, 1) ~= "_" then Names[#Names + 1] = Name end
   end
@@ -5155,11 +5298,33 @@ function InsUi:Toggle()
 end
 
 
+function Fix.DropPictures()
+  -- FIX: Destroy() removed shapes and tab icons but not the pictures (avatar, logo, icon,
+  -- backdrop), the settings gear or sub-tab icons, so they stayed frozen on screen.
+  local function Drop(owner, key)
+    local Img = type(owner) == "table" and owner[key]
+    if Img then
+      pcall(function() Img.Visible = false Img:Remove() end)
+      owner[key] = nil
+    end
+  end
+  for _, Name in ipairs({ "Avatar", "Logo", "Icon", "Backdrop" }) do Drop(State[Name], "Image") end
+  Drop(State, "GearImage")
+  for _, Tab in ipairs(State.Tabs or {}) do
+    Drop(Tab, "Image") Drop(Tab, "ImageOn")
+    for _, Sub in ipairs(Tab.Subs or {}) do Drop(Sub, "Image") Drop(Sub, "ImageOn") end
+  end
+end
+
+
 function InsUi:Destroy()
+  if State.AutoSave then pcall(function() InsUi:SaveConfig(State.ConfigName) end) end
   State.Alive = false
   State.Open = false
 
-  setrobloxinput(true)
+  Fix.DropPictures()
+
+  pcall(setrobloxinput, true)
 
   for Kind, List in pairs(Pool) do
     for Index = 1, #List do
@@ -5469,7 +5634,7 @@ do
 
 
   local function BuildStat(line, lines)
-    local Value = tostring(line.Value)
+    local Value = tostring(Fix.BoxValue(line))
     if Value == "" then return end
 
     local Label, Text = SplitStat(Value)
@@ -5479,7 +5644,7 @@ do
 
 
   local function BuildBar(line, lines)
-    local Number = tonumber(line.Value) or 0
+    local Number = tonumber(Fix.BoxValue(line)) or 0
     local Percent = (Number > 0 and Number <= 1) and Number * Layout.BoxFull or Number
 
     lines[#lines + 1] = { Kind = "Bar", Percent = math.min(math.max(Percent, 0), Layout.BoxFull) }
@@ -5487,7 +5652,7 @@ do
 
 
   local function BuildText(line, lines)
-    lines[#lines + 1] = { Kind = "Text", Text = tostring(line.Value), Color = line.Color }
+    lines[#lines + 1] = { Kind = "Text", Text = tostring(Fix.BoxValue(line)), Color = line.Color }
   end
 
 
@@ -5638,12 +5803,12 @@ do
         local Bind = Row.Bind
 
         if Bind then
-          local Bound = Bind.Value ~= "" and Bind.Value ~= "none" and Row.Value == true
+          local Bound = Row.Value == true -- FIX: list every enabled toggle with a bind slot
           local Plain = HotkeyPlain[string.lower(Row.Name)] and Section.Name ~= ""
 
           Row.Overlay = Approach(Row.Overlay or 0, Bound and 1 or 0, Layout.HotkeySpeed)
 
-          if Row.Overlay > Layout.HotkeyGone then list[#list + 1] = { Name = Plain and Section.Name or Row.Name, Key = KeyName.Label(Bind.Value), Fade = Row.Overlay } end
+          if Row.Overlay > Layout.HotkeyGone then list[#list + 1] = { Name = Plain and Section.Name or Row.Name, Key = (Bind.Value == "" or Bind.Value == "none") and "on" or KeyName.Label(Bind.Value), Fade = Row.Overlay } end
         end
       end
     end
@@ -6145,6 +6310,7 @@ do
       if Name == "Default" then
         local Shipped = State.Shipped
 
+        State.BaseAccentA, State.BaseAccentB = Shipped.AccentA, Shipped.AccentB
         ApplyAccents(Shipped.AccentA, Shipped.AccentB)
 
         Theme.Background, Theme.Text = Shipped.Background, Shipped.Text
@@ -6156,6 +6322,7 @@ do
       local Pair = ThemePresets[Name]
       if not Pair then return end
 
+      State.BaseAccentA, State.BaseAccentB = Pair[1], Pair[2]
       ApplyAccents(Pair[1], Pair[2])
 
       Theme.Background = PresetBackground[Name] or DefaultBackground
@@ -6163,11 +6330,13 @@ do
     end
 
     local function PickFirst(color)
+      State.BaseAccentA = color            -- LOCAL FIX: PackConfig saves the base
       ApplyAccents(color, State.BaseAccentB)
       MarkCustom()
     end
 
     local function PickSecond(color)
+      State.BaseAccentB = color            -- LOCAL FIX: PackConfig saves the base
       ApplyAccents(State.BaseAccentA, color)
       MarkCustom()
     end
@@ -6229,7 +6398,7 @@ do
     Panel:Toggle("Collapse sidebar", not State.RailPinned, function(on) State.RailPinned = not on end, "on = the sidebar shrinks to an icon rail and expands on hover; off = it always stays open")
     Panel:Toggle("Inline dropdowns", State.DropdownInline == true, function(on) State.DropdownInline = on end, "put the dropdown box on the same row as its label instead of below it")
     Panel:Dropdown("Tab layout", { State.TabLayout == "top" and "Top" or "Sidebar" }, { "Sidebar", "Top" }, false, function(value) InsUi:SetLayout(value[1]) end, "tabs on the left rail or across the top")
-    Panel:Dropdown("Search", { string.upper(string.sub(Style, 1, 1)) .. string.sub(Style, 2) }, { "Bar", "Icon", "Off" }, false, function(value) State.SearchStyle = string.lower(value[1]) end, "titlebar search: a bar, just an icon, or hidden (Ctrl+Space always works)")
+    Panel:Dropdown("Search", { string.upper(string.sub(Style, 1, 1)) .. string.sub(Style, 2) }, { "Bar", "Icon", "Off" }, false, function(value) State.SearchStyle = string.lower(value[1]) end, "titlebar search: a bar, just an icon, or hidden")
     Panel:Dropdown("Font", { State.FontName or "Default" }, InsUi:FontChoices(), false, SetFont, "UI font, Matcha built-ins only (custom web fonts can't be loaded into Drawing)", true)
     Panel:Slider("Menu opacity", 98, 1, 40, 100, "%", function(value) State.Opacity = value / Layout.Percent end)
     Panel:Toggle("Animations", State.NoAnim ~= true, function(on) State.NoAnim = not on end)
@@ -6871,7 +7040,9 @@ do
 
     State.InputSent = ToGame
 
-    setrobloxinput(ToGame)
+    if type(setrobloxinput) == "function" then
+      pcall(setrobloxinput, ToGame)
+    end
   end
 end
 
@@ -6919,6 +7090,25 @@ local function DrawMenu()
 end
 
 
+-- FIX: Auto-save. Every 2 s (after the first 3 s, so autoload lands first) the config is
+-- packed and written when it changed. The first look only records what autoload applied,
+-- unless the file does not exist yet. Destroy() also saves once more.
+function Fix.AutoSaveStep()
+  if not State.AutoSave or os.clock() < (State.AutoSaveAfter or math.huge) then return end
+  if os.clock() - (State.AutoSaveAt or 0) < 2 then return end
+  State.AutoSaveAt = os.clock()
+  local Name = tostring(State.ConfigName or "default")
+  local Ok, Snap = pcall(function() return InsUi:ExportConfig() end)
+  if not Ok or type(Snap) ~= "string" then return end
+  local Key = Name .. string.char(0) .. Snap
+  if Key == State.AutoSnap then return end
+  local First = State.AutoSnap == nil
+  State.AutoSnap = Key
+  local OkExists, Exists = pcall(isfile, ConfigPath(Name))
+  if First and OkExists and Exists then return end
+  pcall(function() InsUi:SaveConfig(Name) end)
+end
+
 task.spawn(function()
   while State.Alive do
     if _G[LibName .. "Instance"] ~= Instance then
@@ -6944,7 +7134,7 @@ task.spawn(function()
     if State.Visible > 0.997 then State.Visible = 1 end
     if State.Visible < 0.003 then State.Visible = 0 end
 
-    if State.SpotlightEnabled and (Keys.Ctrl.Held or Keys.LeftCtrl.Held or Keys.RightCtrl.Held) and Keys.Space.Click then
+    if false then -- FIX: no Ctrl+Space hotkey (Ctrl and Space are game keys); the search bar still opens on click
       ShowSpotlight(not State.SpotlightOpen)
 
       Keys.Space.Click = false
@@ -6978,6 +7168,7 @@ task.spawn(function()
     end
     if State.Capture then CaptureKey(State.Capture) end
     RunKeybinds()
+    Fix.AutoSaveStep()
 
     local Over = State.SpotlightOpen or State.Dialog ~= nil
     local Click, Right, Down = Input.Click, Input.Right, Input.Down
