@@ -48,7 +48,7 @@ Fix.AutoexecFile = "INSUI/autoexec.json"
 -- makefolder for every level of a/b/c
 function Fix.MakeDirs(path)
   local At = ""
-  for Part in string.gmatch(tostring(path), "[^/\]+") do
+  for Part in string.gmatch(tostring(path), "[^/\\]+") do
     At = At == "" and Part or (At .. "/" .. Part)
     if not isfolder(At) then makefolder(At) end
   end
@@ -1542,6 +1542,8 @@ end
 
 
 local function ReadKeys()
+  local okFocus, focused = pcall(function() return isrbxactive() end)
+  State.RobloxFocused = okFocus and focused == true
   local uis = game:GetService("UserInputService")
   for Index = 1, #KeyOrder do
     local Key = Keys[KeyOrder[Index]]
@@ -1566,8 +1568,13 @@ local function ReadKeys()
       end
     end
 
-    Key.Click = Held and not Key.Held
-    Key.Held = Held
+    -- Poll raw state outside Roblox too: typing in another app cannot toggle a
+    -- game feature, and returning with that key held cannot synthesize a press.
+    if not State.RobloxFocused and Held then Key.SuppressUntilUp = true end
+    if not Held then Key.SuppressUntilUp = false end
+    Key.Click = State.RobloxFocused and Held and not Key.RawHeld and not Key.SuppressUntilUp
+    Key.RawHeld = Held
+    Key.Held = State.RobloxFocused and Held and not Key.SuppressUntilUp
   end
 end
 
@@ -4322,7 +4329,7 @@ end
 
 
 local function RunKeybinds()
-  if State.Focus or State.Capture then return end
+  if State.RobloxFocused and (State.Focus or State.Capture) then return end
 
   for _, Tab in ipairs(State.Tabs) do
     for _, Section in ipairs(Tab.Sections) do
@@ -4337,8 +4344,9 @@ local function RunKeybinds()
 
           if not Key then
           elseif not Live then
+            if Mode == "Hold" then Active = false end
           elseif Mode == "Always" then
-            Active = true
+            if State.RobloxFocused then Active = true end
           elseif Mode == "Toggle" then
             if Key.Click then Active = not Active end
           else
@@ -4415,7 +4423,7 @@ do
   -- FIX: a config folder may be nested ("INSUI/MyHub"); each part is cleaned on its own
   function SafeFolder(name)
     local Parts = {}
-    for Part in string.gmatch(tostring(name), "[^/\]+") do
+    for Part in string.gmatch(tostring(name), "[^/\\]+") do
       Part = Part:gsub("[^%w%-_ ]", ""):gsub("^%s+", ""):gsub("%s+$", "")
       if Part ~= "" then Parts[#Parts + 1] = Part end
     end
@@ -4559,7 +4567,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.1.1" }
+local InsUi = { _state = State, Version = "j5cks-1.4.0" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -5345,6 +5353,7 @@ end
 
 
 function InsUi:Destroy()
+  if Fix.HelperDestroy then Fix.HelperDestroy() end
   if State.AutoSave then pcall(function() InsUi:SaveConfig(State.ConfigName) end) end
   State.Alive = false
   State.Open = false
@@ -5397,7 +5406,7 @@ function InsUi:RegisterAutoexec(entry)
     return Out
   end
   local New = { name = entry.name, label = entry.label, games = Ids(entry.games), places = Ids(entry.places),
-    source = entry.source, url = entry.url }
+    source = entry.source, url = entry.url, users = Ids(entry.users) }
   if Old and Old.enabled ~= nil then New.enabled = Old.enabled else New.enabled = entry.enabled ~= false end
   Data.scripts[entry.name] = New
   Fix.WriteAutoexec(Data)
@@ -6592,12 +6601,22 @@ function Fix.AutoexecLabel(entry)
 end
 
 
+function Fix.AutoexecAllowed(entry)
+  local id = Players.LocalPlayer and tonumber(Players.LocalPlayer.UserId)
+  if tostring(entry.name):lower() == "tiltline" and id ~= 4654017802 then return false end
+  if type(entry.users) == "table" and #entry.users > 0 then
+    for _, allowed in ipairs(entry.users) do if tonumber(allowed) == id then return true end end
+    return false
+  end
+  return true
+end
 function Fix.AutoexecRow(name)
   local Panel = State.AutoexecPanel
   if not Panel then return end
   State.AutoexecRows = State.AutoexecRows or {}
   if State.AutoexecRows[name] then return end
   local Entry = Fix.ReadAutoexec().scripts[name] or { name = name }
+  if not Fix.AutoexecAllowed(Entry) then return end
   local Row = Panel:Toggle(Fix.AutoexecLabel(Entry), Entry.enabled ~= false, function(on)
     local Data = Fix.ReadAutoexec()
     local E = Data.scripts[name]
@@ -7232,6 +7251,491 @@ function Fix.AutoSaveStep()
   pcall(function() InsUi:SaveConfig(Name) end)
 end
 
+-- Universal helper client; all implementation lives on Fix to preserve the chunk local budget.
+Fix.Helpers = {}
+Fix.HelperRoot = "INSUI/helper"
+function Fix.HelperRead(path)
+  local ok, value = pcall(function() return isfile(path) and HttpService:JSONDecode(readfile(path)) or nil end)
+  return ok and type(value) == "table" and value or nil
+end
+function Fix.HelperWrite(path, value)
+  return pcall(function() writefile(path, HttpService:JSONEncode(value)) end)
+end
+function Fix.HelperFeatures(h)
+  local cfg = Fix.HelperRead(Fix.HelperRoot .. "/config.json")
+  local saved = cfg and cfg.scripts and cfg.scripts[h.name]
+  local f = {}
+  for _, k in ipairs({"dashboard", "webhook", "watchdog", "afk", "files"}) do
+    f[k] = h.features[k] == true
+    if type(saved) == "table" and type(saved[k]) == "boolean" then f[k] = saved[k] end
+  end
+  return f
+end
+Fix.HelperMethods = {}
+function Fix.HelperMethods:Enabled(key) return Fix.HelperFeatures(self)[key] == true end
+function Fix.HelperMethods:Up()
+  if self.windows == false then return false end
+  local meta = Fix.HelperRead(Fix.HelperRoot .. "/helper.json")
+  local age = meta and os.time() - (tonumber(meta.beat) or 0) or 999
+  return age >= 0 and age < 15 and tonumber(meta.port) == 47210
+end
+-- Discord is set up on the website (adorablewhale.world/dashboard): the script never holds the
+-- webhook. H:Discord() = {set, updates, minutes, alert} from the last sync; H:Notify(kind, embed)
+-- sends through the site, which styles it (lowercase, black bar) and edits one message for kind
+-- "update" (at most once a minute). kind: "update" | "event" | "alert". Call it from a task.
+function Fix.HelperMethods:Discord() return self.discord or {set = false} end
+function Fix.HelperMethods:Notify(kind, embed)
+  if not Fix.AccessAccepted or not Fix.AccessRead().cloud then return nil, "cloud dashboard is off" end
+  return Fix.CloudCall("/api/v1/notify", {name = self.name, kind = kind, embed = embed})
+end
+function Fix.HelperMethods:Log(line)
+  -- URLs/tokens must never leak into dashboard/log files.
+  local s = tostring(line):gsub("https?://[^%s]+/api/webhooks/[^%s]+", "[webhook redacted]")
+  table.insert(self.log, s)
+  while #self.log > 40 do table.remove(self.log, 1) end
+end
+function Fix.HelperMethods:Watch(armed, label) self.watch = {armed = armed == true, label = tostring(label or "running")} end
+function Fix.HelperMethods:NeedFocus(on, keys) self.afk = {needFocus = on == true, keys = "OI"} end
+function Fix.HelperMethods:Action(id, label, fn)
+  if type(id) == "string" and id:match("^[%w_-]+$") and type(fn) == "function" then
+    self.actions[id] = {id = id, label = tostring(label), fn = fn}
+    self.controlsStamp = nil
+  end
+  return self
+end
+function Fix.HelperMethods:_Call(route, value, get)
+  if not self:Up() then return nil, "helper is down" end
+  local ok, token = pcall(readfile, Fix.HelperRoot .. "/token.txt")
+  if not ok or type(token) ~= "string" or #token < 16 then return nil, "helper token missing" end
+  local url, headers = "http://127.0.0.1:47210" .. route, { ["X-Helper-Token"] = token }
+  local okR, text = pcall(function()
+    if get then return httpget(url, headers) end
+    value = value or {} value.script = self.name
+    return httppost(url, HttpService:JSONEncode(value), "application/json", headers)
+  end)
+  if not okR then return nil, "helper request failed" end
+  local okJ, j = pcall(function() return HttpService:JSONDecode(text) end)
+  if not okJ or type(j) ~= "table" then return nil, "invalid helper reply" end
+  if j.error then return nil, tostring(j.error) end
+  return j
+end
+function Fix.HelperMethods:Request(method, url, body, headers)
+  if self:Up() then return self:_Call("/api/http", {method = method, url = url, body = body, headers = headers}) end
+  local ok, text = pcall(function()
+    if method == "GET" then return httpget(url, headers) end
+    if method == "POST" then return httppost(url, body or "", "application/json", headers) end
+    return nil
+  end)
+  if ok and type(text) == "string" and #text > 0 then return {body = text, status = 0, headers = {}} end
+  return nil, "helper required for this request (direct status unavailable)"
+end
+function Fix.HelperMethods:Clipboard() local j, why = self:_Call("/api/clipboard", nil, true) return j and j.text or nil, why end
+function Fix.HelperMethods:Open(url) return self:_Call("/api/open", {url = url}) end
+function Fix.HelperMethods:WriteFile(path, text)
+  if not Fix.HelperFeatures(self).files then return nil, "files feature is off" end
+  return self:_Call("/api/file", {path = path, text = text})
+end
+function Fix.HelperMethods:Webhook(url, payload, options)
+  options = options or {}
+  if not Fix.HelperFeatures(self).webhook then return nil, "webhook feature is off" end
+  if not self:Up() and Fix.AccessRead().cloud and Fix.AccessAccepted then
+    local value = payload
+    if type(value) == "string" then local ok, j = pcall(function() return HttpService:JSONDecode(value) end) if not ok then return nil, "invalid webhook payload" end value = j end
+    local result, why = Fix.CloudCall("/api/v1/webhook", {name = self.name, url = url, payload = value,
+      messageId = options.messageId and tostring(options.messageId) or nil, watchdog = Fix.HelperFeatures(self).watchdog})
+    if result then return {id = result.messageId} end
+    return nil, why
+  end
+  local path = type(url) == "string" and url:match("^https://discord%.com(/api/webhooks/%d+/[%w_-]+)$")
+  if not path then return nil, "invalid Discord webhook" end
+  Fix.HelperWrite(self.dir .. "/webhook.json", {url = url, ping = options.ping or "", alert = options.alert ~= false, shot = options.shot == true})
+  local body = type(payload) == "string" and payload or HttpService:JSONEncode(payload)
+  body = body:gsub('"color":65793%.0', '"color":65793')
+  local destination = url .. "?wait=true"
+  if self:Up() then
+    if options.messageId then
+      local id = tostring(options.messageId)
+      if not id:match("^%d+$") then return nil, "invalid message id" end
+      path = path .. "/messages/" .. id
+    end
+    destination = "http://127.0.0.1:47210" .. path .. (options.shot and "?shot=1" or "")
+  elseif options.messageId then return nil, "editing needs the helper" end
+  local ok, text = pcall(httppost, destination, body, "application/json")
+  if not ok then return nil, "webhook request failed" end
+  local okJ, j = pcall(function() return HttpService:JSONDecode(text) end)
+  if not okJ or type(j) ~= "table" then return nil, "invalid webhook reply" end
+  return j
+end
+function Fix.HelperPrivate(row)
+  local name = tostring(row.Name or ""):lower()
+  return row.HelperPrivate == true or row.CloudPrivate == true or name:find("dashboard key", 1, true) or name:find("api key", 1, true) or name:find("webhook", 1, true) or name:find("password", 1, true) or name:find("secret", 1, true) or name:find("token", 1, true)
+end
+function Fix.HelperRows(h)
+  local controls, rows, byPath = {}, {}, {}
+  EachRow(function(tab, section, row)
+    local kind = row.Kind
+    if not Fix.HelperPrivate(row) and (kind == "Toggle" or kind == "Slider" or kind == "Dropdown" or kind == "Textbox") then
+      local path = RowPath(tab, section, row)
+      if path ~= "" then
+        if byPath[path] == nil then byPath[path] = row else byPath[path] = false end
+        rows[path] = row.Value
+        controls[#controls + 1] = {path = path, tab = tab.Name, section = section.Name, name = row.Name,
+          kind = kind:lower(), value = row.Value, min = row.Min, max = row.Max, step = row.Step,
+          suffix = row.Suffix, choices = row.Choices, multi = row.Multi, disabled = row.Hidden == true or row.Locked == true or RowLocked(row), risk = row.Risk == true,
+          library = tab.Hidden == true}   -- INSUI's own gear tab (theme, configs, auto-execute): never sent to the cloud
+      end
+    end
+  end)
+  h.byPath = byPath
+  local actions = {}
+  for _, a in pairs(h.actions) do actions[#actions + 1] = {id = a.id, label = a.label} end
+  table.sort(actions, function(a, b) return a.id < b.id end)
+  return {controls = controls, actions = actions}, rows
+end
+function Fix.HelperValidate(row, value)
+  if row.Hidden or row.Locked or RowLocked(row) then return nil, "control is disabled" end
+  if row.Kind == "Toggle" and type(value) == "boolean" then return value end
+  if row.Kind == "Slider" and type(value) == "number" and value == value and value > -math.huge and value < math.huge then
+    return SnapValue(value, row)
+  end
+  if row.Kind == "Textbox" and type(value) == "string" and #value <= 400 then return value end
+  if row.Kind == "Dropdown" and type(value) == "table" then
+    if not row.Multi and #value > 1 then return nil, "choose one value" end
+    if row.MaxSelections and #value > row.MaxSelections then return nil, "too many choices" end
+    local out, seen = {}, {}
+    for _, v in ipairs(value) do
+      local found = false
+      for _, c in ipairs(row.Choices or {}) do if c == v then found = true break end end
+      if not found or seen[v] then return nil, "invalid choice" end
+      seen[v] = true out[#out + 1] = v
+    end
+    return out
+  end
+  return nil, "invalid value"
+end
+function Fix.HelperCommands(h)
+  local ok, text = pcall(function() return isfile(h.dir .. "/commands.txt") and readfile(h.dir .. "/commands.txt") or "" end)
+  if not ok or type(text) ~= "string" then return end
+  local first = h.lastId == nil
+  h.lastId = h.lastId or 0
+  for line in text:gmatch("[^\r\n]+") do
+    local okJ, c = pcall(function() return HttpService:JSONDecode(line) end)
+    local id = okJ and type(c) == "table" and tonumber(c.id)
+    if id and id > h.lastId then
+      h.lastId, h.cmd.ack = id, tostring(c.id)
+      if not first then
+        local success, msg = false, "expired or disabled command"
+        local age = os.time() - (tonumber(c.t) or 0)
+        if age >= 0 and age < 120 and Fix.HelperFeatures(h).dashboard then
+          if c.set and h.byPath[c.set] then
+            local row = h.byPath[c.set]
+            local value, why = Fix.HelperValidate(row, c.value)
+            if value ~= nil then
+              local okA = pcall(row.Set, row, value)
+              success, msg = okA, okA and "applied" or "callback failed"
+            else msg = why end
+          elseif c["do"] and h.actions[c["do"]] then
+            local okA, res, why = pcall(h.actions[c["do"]].fn)
+            success = okA and res ~= false
+            msg = success and "done" or tostring(why or "action failed")
+          else msg = "unknown control or action" end
+        end
+        h.cmd.results[#h.cmd.results + 1] = {id = tostring(c.id), ok = success, msg = msg}
+        while #h.cmd.results > 40 do table.remove(h.cmd.results, 1) end
+        h.nextState = 0
+      end
+    end
+  end
+end
+function Fix.HelperState(h, unloaded)
+  if h.windows == false then return end
+  local ctl, rows = Fix.HelperRows(h)
+  local f = Fix.HelperFeatures(h)
+  local out = {name = h.name, version = h.version, game = tostring(game.PlaceId), t = os.time(), unloaded = unloaded == true,
+    features = h.features, status = f.dashboard and (h.state.status or {lines = {}}) or {lines = {"dashboard off"}},
+    stats = f.dashboard and (h.state.stats or {}) or {}, log = f.dashboard and h.log or {},
+    watch = {armed = f.watchdog and h.watch.armed == true, label = h.watch.label},
+    afk = {needFocus = f.afk and h.afk.needFocus == true, keys = "OI"}, cmd = h.cmd, rows = f.dashboard and rows or {}}
+  Fix.HelperWrite(h.dir .. "/state.json", out)
+  local okJ, text, stamp = pcall(function()
+    local shape = {controls = {}, actions = ctl.actions}
+    for _, row in ipairs(ctl.controls) do
+      local metadata = {}
+      for key, value in pairs(row) do if key ~= "value" then metadata[key] = value end end
+      shape.controls[#shape.controls + 1] = metadata
+    end
+    return HttpService:JSONEncode(ctl), HttpService:JSONEncode(shape)
+  end)
+  if okJ and stamp ~= h.controlsStamp then
+    if pcall(writefile, h.dir .. "/controls.json", text) then h.controlsStamp = stamp end
+  end
+end
+function InsUi:Helper(options)
+  if type(options) ~= "table" or type(options.name) ~= "string" or #options.name > 64 or not options.name:match("^[%w_-]+$") then return nil, "invalid helper name" end
+  local h = setmetatable({name = options.name, version = tostring(options.version or "0.0.0"),
+    windows = options.windows ~= false, features = {dashboard = true}, state = {}, log = {}, watch = {}, afk = {}, actions = {},
+    cmd = {ack = "0", results = {}}, nextState = 0, nextCmd = 0}, {__index = Fix.HelperMethods})
+  for k, v in pairs(options.features or {}) do h.features[k] = v == true end
+  h.dir = Fix.HelperRoot .. "/scripts/" .. h.name
+  if h.windows then Fix.MakeDirs(h.dir) end
+  Fix.Helpers[h.name] = h
+  pcall(Fix.HelperRows, h)
+  if h.windows then pcall(Fix.HelperCommands, h) end -- discard old commands immediately, even if the file is empty
+  pcall(Fix.HelperState, h, false)
+  return h
+end
+function Fix.HelperStep()
+  local t = os.clock()
+  for _, h in pairs(Fix.Helpers) do
+    if t >= h.nextCmd then h.nextCmd = t + 0.5 pcall(Fix.HelperRows, h) if h.windows then pcall(Fix.HelperCommands, h) end end
+    if t >= h.nextState then h.nextState = t + 2 pcall(Fix.HelperState, h, false) end
+  end
+end
+function Fix.HelperDestroy()
+  local helpers = Fix.Helpers
+  for _, h in pairs(helpers) do pcall(Fix.HelperState, h, true) end
+  task.spawn(function() for _, h in pairs(helpers) do if h.cloudRun and Fix.AccessRead().cloud then pcall(Fix.CloudSync, h, true) end end end)
+  Fix.Helpers = {}
+end
+
+
+-- Hosted dashboard and terms. No new top-level locals: keep the INSUI register budget.
+Fix.AccessVersion = "2026-09-30.1"
+Fix.AccessTerms = "These third-party scripts run in Matcha and may automate gameplay or change client values when you enable features. Features may fail or change after game updates. You can disable features or unload the script at any time. Cloud dashboards and named launch reporting are optional and explained separately."
+Fix.CloudOrigin = "https://adorablewhale.world"
+Fix.AccessFile = "INSUI/cloud/access.json"
+Fix.CloudBusy = false
+Fix.CloudNext = 0
+function Fix.AccessRead()
+  return Fix.HelperRead(Fix.AccessFile) or {cloud = false, reporting = false}
+end
+function Fix.AccessSave(c)
+  Fix.MakeDirs(Fix.AccessFile:match("^(.*)/[^/]*$") or "INSUI")
+  return Fix.HelperWrite(Fix.AccessFile, c)
+end
+function Fix.AccessAsk(lib, options, title, text, confirm, cancel)
+  local done, accepted = false, false
+  lib:SetOpen(false)
+  lib:Dialog({title = title, text = text, confirm = confirm, cancel = cancel,
+    onConfirm = function() done, accepted = true, true end,
+    onCancel = function() done, accepted = true, false end})
+  while not done and State.Alive and (not options.alive or options.alive()) do task.wait(0.1) end
+  if not done then State.Dialog = nil end
+  return done and accepted
+end
+function InsUi:RequireTerms(options)
+  options = options or {}
+  local c = Fix.AccessRead()
+  if c.terms ~= Fix.AccessVersion then
+    if not Fix.AccessAsk(self, options, "Terms to use these scripts", Fix.AccessTerms, "Agree and load", "Decline") then return false, "terms declined" end
+    c.terms = Fix.AccessVersion
+    if not Fix.AccessSave(c) then return false, "could not save acceptance" end
+  end
+  if c.cloudChoice ~= true then
+    c.cloud = Fix.AccessAsk(self, options, "Optional cloud dashboard", "Cloud mode sends reviewed script status, counters and menu controls to adorablewhale.world. Anyone with your dashboard key can change those controls. No raw debug logs or passwords are uploaded. You can turn this off in settings.", "Enable dashboard", "Keep local")
+    if not State.Alive or (options.alive and not options.alive()) then return false, "unloaded during setup" end
+    c.cloudChoice = true
+    Fix.AccessSave(c)
+  end
+  if c.reportChoice ~= true then
+    c.reporting = Fix.AccessAsk(self, options, "Optional named launch reporting", "Reporting starts off. If you enable it, adorablewhale.world stores your Roblox username/user ID, script/version, game name/IDs and launch time in the owner's admin history for 30 days. This is separate from your cloud dashboard. You can opt out and delete your history.", "Enable reporting", "Keep reporting off")
+    if not State.Alive or (options.alive and not options.alive()) then return false, "unloaded during setup" end
+    c.reportChoice, c.reportPending = true, c.reporting == true
+    Fix.AccessSave(c)
+  end
+  Fix.AccessAccepted = true
+  self:SetOpen(true)
+  return true
+end
+function Fix.CloudCall(route, value, noKey)
+  local c = Fix.AccessRead()
+  local headers = {}
+  if not noKey then
+    if type(c.key) ~= "string" or #c.key ~= 64 then return nil, "dashboard key unavailable" end
+    headers.Authorization = "Bearer " .. c.key
+  end
+  local ok, result = pcall(function()
+    return HttpService:JSONDecode(httppost(Fix.CloudOrigin .. route, HttpService:JSONEncode(value or {}), "application/json", headers))
+  end)
+  if not ok or type(result) ~= "table" then return nil, "cloud offline" end
+  if result.ok ~= true then return nil, tostring(result.error or "cloud unavailable") end
+  return result
+end
+function Fix.CloudReady()
+  local c = Fix.AccessRead()
+  if c.terms ~= Fix.AccessVersion or (not c.cloud and not c.reporting) then return nil, "cloud off" end
+  if type(c.key) ~= "string" or #c.key ~= 64 then
+    local result, why = Fix.CloudCall("/api/v1/register", {termsVersion = Fix.AccessVersion, cloudConsent = c.cloud == true, reportingConsent = c.reporting == true}, true)
+    if not result or type(result.key) ~= "string" or #result.key ~= 64 then return nil, why end
+    c.key, c.installation = result.key, result.installation
+    if not Fix.AccessSave(c) then return nil, "could not save dashboard key" end
+    InsUi:Notify("Cloud dashboard", "Your private key is ready in the Cloud dashboard settings tab.", 8, "success")
+  end
+  if c.reportPending then
+    local result, why = Fix.CloudCall("/api/v1/consent", {reporting = c.reporting == true, termsVersion = Fix.AccessVersion})
+    if not result then return nil, why end
+    c.reportPending = false Fix.AccessSave(c)
+  end
+  return c
+end
+function Fix.CloudApply(h, command)
+  local age = os.time() - (tonumber(command.t) or 0)
+  if age < 0 or age >= 120 or not Fix.AccessAccepted or not State.Alive or not Fix.AccessRead().cloud then return false, "expired or unauthorized" end
+  if command.set and h.byPath[command.set] then
+    local row = h.byPath[command.set]
+    if row.CloudPrivate or Fix.HelperPrivate(row) or row.Kind == "Textbox" then return false, "private control" end
+    local value, why = Fix.HelperValidate(row, command.value)
+    if value == nil then return false, why end
+    local ok = pcall(row.Set, row, value)
+    return ok, ok and "applied" or "callback failed"
+  elseif command["do"] and h.actions[command["do"]] then
+    local ok, result = pcall(h.actions[command["do"]].fn)
+    return ok and result ~= false, ok and result ~= false and "done" or "action failed"
+  end
+  return false, "unknown control"
+end
+function Fix.CloudSync(h, unloaded)
+  -- a newer copy of this script took over this installation's run on the server: stop syncing
+  if h.cloudSuperseded then return nil, "superseded" end
+  -- helpers that opt out of the dashboard (the autoexec loader) only report launches, never sync
+  if h.features and h.features.dashboard == false then return nil, "dashboard off" end
+  local c = Fix.AccessRead()
+  if (not c.cloud and not unloaded) or not Fix.AccessAccepted then return nil, "cloud off" end
+  local ctl, rows = Fix.HelperRows(h)
+  local controls = {controls = {}, actions = {}}
+  for _, row in ipairs(ctl.controls) do
+    if row.kind ~= "textbox" and not row.library and not row.path:lower():find("cloud", 1, true) then
+      local live = h.byPath[row.path]
+      if live and not live.CloudPrivate then controls.controls[#controls.controls + 1] = row end
+    end
+  end
+  for _, action in ipairs(ctl.actions) do controls.actions[#controls.actions + 1] = {id = action.id, label = action.label, risk = true} end
+  local state = {status = h.state.status or {lines = {}}, stats = h.state.stats or {}, rows = rows,
+    cards = h.state.cards, helper = h:Up() == true}   -- cards: the script's summary panels (see Fix.HelperMethods:Notify)
+  if h.cloudStatus then state.status = {lines = h.cloudStatus} end
+  local result, why = Fix.CloudCall("/api/v1/sync", {termsVersion = Fix.AccessVersion, name = h.name, version = h.version,
+    runId = h.cloudRun, place = string.format("%.0f", game.PlaceId), game = string.format("%.0f", game.GameId),
+    gameName = type(getgamename) == "function" and getgamename() or "", state = state, controls = controls,
+    acks = h.cloudAcks or {}, watch = Fix.HelperFeatures(h).watchdog and h.watch.armed == true, unloaded = unloaded == true,
+    start = h.cloudStart == true, started = h.cloudStarted})
+  if not result then
+    if why == "superseded" then h.cloudSuperseded = true end
+    return nil, why
+  end
+  h.cloudAcks, h.cloudStart = {}, false
+  h.discord = type(result.discord) == "table" and result.discord or {set = false}
+  if c.reporting and result.reporting == false then
+    c.reporting, c.reportPending = false, false
+    Fix.AccessSave(c)
+    if State.CloudReportRow then State.CloudReportRow.Value = false end
+  end
+  for _, command in ipairs(not unloaded and result.commands or {}) do
+    if type(command.id) == "string" and not h.cloudSeen[command.id] then
+      h.cloudSeen[command.id] = true
+      local ok, msg = Fix.CloudApply(h, command)
+      h.cloudAcks[#h.cloudAcks + 1] = {id = command.id, ok = ok, msg = msg}
+    end
+  end
+  return result
+end
+function Fix.CloudLaunch(h)
+  local c = Fix.AccessRead()
+  if not c.reporting or h.cloudReported then return end
+  local player = Players.LocalPlayer
+  if not player then return end
+  local result = Fix.CloudCall("/api/v1/launch", {eventId = h.cloudRun, reportingConsent = true, termsVersion = Fix.AccessVersion,
+    name = h.name, version = h.version, place = string.format("%.0f", game.PlaceId), game = string.format("%.0f", game.GameId),
+    gameName = type(getgamename) == "function" and getgamename() or "", username = player.Name, userId = string.format("%.0f", player.UserId)})
+  if result then h.cloudReported = true end
+end
+function Fix.CloudStep()
+  if Fix.CloudBusy or not Fix.AccessAccepted or os.clock() < Fix.CloudNext then return end
+  local c = Fix.AccessRead()
+  if not c.cloud and not c.reporting then return end
+  Fix.CloudBusy, Fix.CloudNext = true, os.clock() + 30
+  task.spawn(function()
+    local ok = pcall(function()
+      local ready, why = Fix.CloudReady()
+      if not ready then Fix.CloudStatus = why or "offline" Fix.CloudNext = os.clock() + 60 return end
+      Fix.CloudStatus = ready.cloud and "online (30-second sync)" or "dashboard off"
+      local watched = false
+      for _, h in pairs(Fix.Helpers) do
+        if not State.Alive then break end
+        if not h.cloudRun then
+          h.cloudRun = HttpService:GenerateGUID(false):lower()
+          h.cloudSeen, h.cloudAcks = {}, {}
+          -- the first sync claims the run; started orders reinjected copies on the server
+          h.cloudStart, h.cloudStarted = true, os.time()
+        end
+        if ready.cloud and not h.cloudSuperseded then
+          local result, reason = Fix.CloudSync(h, false)
+          if result and result.fast then watched = true end
+          if reason == "superseded" then Fix.CloudStatus = "replaced by a newer copy of " .. tostring(h.name)
+          elseif not result then Fix.CloudStatus = reason or "offline" Fix.CloudNext = os.clock() + 60 end
+        end
+        Fix.CloudLaunch(h)
+      end
+      -- someone has the dashboard open: sync every 5 s so remote changes apply almost at once
+      if watched then Fix.CloudNext = math.min(Fix.CloudNext, os.clock() + 5) Fix.CloudStatus = "online (live: dashboard open)" end
+    end)
+    if not ok then Fix.CloudStatus, Fix.CloudNext = "offline", os.clock() + 60 end
+    Fix.CloudBusy = false
+  end)
+end
+function InsUi:FlushCloud()
+  -- Loader launch reporting survives its short-lived UI library without delaying loads.
+  local helpers = Fix.Helpers
+  task.spawn(function()
+    local ready = Fix.CloudReady()
+    if not ready then return end
+    for _, h in pairs(helpers) do
+      h.cloudRun = h.cloudRun or HttpService:GenerateGUID(false):lower()
+      pcall(Fix.CloudLaunch, h)
+    end
+  end)
+end
+function InsUi:AddCloudTab(win)
+  local section = win:Tab("Cloud dashboard", "sliders"):Section("Your installation", "Full", "Optional cloud syncing and separate named reporting")
+  section:Info("adorablewhale.world/dashboard | Copy your private key below. Anyone with the key can change your running script's cloud controls.")
+  section:Label(function() return "Cloud: " .. tostring(Fix.CloudStatus or "not connected") end)
+  section:Label(function() local c = Fix.AccessRead() return "Key: " .. (type(c.key) == "string" and (string.rep("*", 12) .. c.key:sub(-4)) or "not generated yet") end)
+  local cloud
+  cloud = section:Toggle("Enable cloud dashboard", Fix.AccessRead().cloud == true, function(on)
+    local function apply(value) local c = Fix.AccessRead() c.cloud = value Fix.AccessSave(c) cloud.Value = value Fix.CloudNext = 0 end
+    if on then self:Dialog({title = "Enable cloud dashboard?", text = "Reviewed script status, counters and controls go to adorablewhale.world. Your key permits remote setting changes. Raw debug logs and passwords stay local.", confirm = "Enable dashboard", cancel = "Keep local", onConfirm = function() apply(true) end, onCancel = function() apply(false) end}) else
+      -- Stop stale remote controls/alerts promptly, then stop syncing.
+      apply(false)
+      task.spawn(function() for _, h in pairs(Fix.Helpers) do if h.cloudRun then pcall(Fix.CloudSync, h, true) end end end)
+    end
+  end)
+  cloud.HelperPrivate, cloud.CloudPrivate, cloud.NoSave = true, true, true
+  local report
+  report = section:Toggle("Named launch reporting", Fix.AccessRead().reporting == true, function(on)
+    local function apply(value) local c = Fix.AccessRead() c.reporting, c.reportPending = value, true Fix.AccessSave(c) Fix.CloudNext = 0
+      report.Value = value
+      if not value then task.spawn(function() Fix.CloudCall("/api/v1/consent", {reporting = false}) end) end
+    end
+    if on then self:Dialog({title = "Enable named reporting?", text = "Send Roblox username/user ID, script/version, game name/IDs and launch time to the owner's admin history on adorablewhale.world. Retained 30 days. Reporting is optional; disabling it does not stop your script.", confirm = "Enable reporting", cancel = "Keep reporting off", onConfirm = function() apply(true) end, onCancel = function() apply(false) end}) else apply(false) end
+  end)
+  report.HelperPrivate, report.CloudPrivate, report.NoSave = true, true, true
+  State.CloudReportRow = report   -- CloudSync turns it off when the server says reporting is off
+  section:Button("Copy dashboard key", function()
+    local c = Fix.AccessRead()
+    if type(c.key) == "string" then setclipboard(c.key) self:Notify("Dashboard key", "Copied. Keep this key private.", 5, "info") else self:Notify("Dashboard key", "Enable cloud mode and wait for a connection first.", 5, "warning") end
+  end):AddButton("Copy dashboard URL", function() setclipboard(Fix.CloudOrigin .. "/dashboard") end)
+  section:Button("Replace dashboard key", function()
+    self:Dialog({title = "Replace private key?", text = "The old key and every browser session using it will stop working. Copy the new key afterwards.", confirm = "Replace key", onConfirm = function() task.spawn(function()
+      local result, why = Fix.CloudCall("/api/v1/rotate", {})
+      if result then local c = Fix.AccessRead() c.key = result.key Fix.AccessSave(c) self:Notify("Dashboard key", "Replaced. Copy the new key to sign in.", 6, "success") else self:Notify("Dashboard key", why, 6, "error") end
+    end) end})
+  end):SetRisk()
+  section:Button("Delete my launch history", function()
+    self:Dialog({title = "Delete launch history?", text = "Delete your installation's previous named launch records from the admin server. This does not disable future reporting.", confirm = "Delete history", onConfirm = function() task.spawn(function()
+      local result, why = Fix.CloudCall("/api/v1/delete-history", {}) self:Notify("Launch history", result and "Deleted" or why, 5, result and "success" or "error")
+    end) end})
+  end):SetRisk()
+end
+
 task.spawn(function()
   while State.Alive do
     if _G[LibName .. "Instance"] ~= Instance then
@@ -7248,6 +7752,10 @@ task.spawn(function()
     ResetFrame()
     ReadInput()
     ReadKeys()
+    if not State.RobloxFocused then
+      Input.Up = Input.Up or Input.Down
+      Input.Down, Input.Click, Input.RightDown, Input.Right = false, false, false, false
+    end
     StepTheme()
 
     if Input.Up then ReleaseDrags() end
@@ -7292,6 +7800,8 @@ task.spawn(function()
     if State.Capture then CaptureKey(State.Capture) end
     RunKeybinds()
     Fix.AutoSaveStep()
+    Fix.HelperStep()
+    Fix.CloudStep()
 
     local Over = State.SpotlightOpen or State.Dialog ~= nil
     local Click, Right, Down = Input.Click, Input.Right, Input.Down

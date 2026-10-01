@@ -75,3 +75,7 @@ luau-compile --null insui.lua     # must compile (github.com/luau-lang/luau rele
 Then count top-level locals with `luau-ast` (keep them under 200), load the file in
 Matcha, build a window, and take a full-desktop screenshot. Matcha's overlay doesn't
 show up in a Roblox-window capture.
+
+## j5cks-1.2.0 (local candidate, 2026-09-30)
+
+Universal lib:Helper client and helper/matcha-helper.bat: per-script dashboard/commands, heartbeat availability, relay edits/screenshots, watchdog, checked AFK focus, HTTP/clipboard/files/loader tools. All new library internals live on Fix; 193 top-level locals. See helper/README.md. Not committed or published.

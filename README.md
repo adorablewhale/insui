@@ -8,6 +8,12 @@ TiltLine and FischHub built in: keybinds for F-keys, saving that actually saves,
 `SetVisible`, a clean `Destroy`, working `Paragraph`/`Progressbar`/`Space`, live box
 lines, and more. See **[PATCHES.md](PATCHES.md)** for the full list.
 
+## Universal helper (local j5cks-1.2.0 candidate)
+
+`lib:Helper({name, version, features})` connects a script to `helper/matcha-helper.bat` for its dashboard,
+commands, webhooks, watchdog and checked AFK focus. See [helper/README.md](helper/README.md).
+The helper-aware fork and helper are tested local changes; the public URL still serves the prior release.
+
 ## Load
 
 ```lua
