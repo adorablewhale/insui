@@ -4580,7 +4580,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.2" }
+local InsUi = { _state = State, Version = "j5cks-1.4.3" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -7302,6 +7302,8 @@ end
 function Fix.HelperMethods:Discord() return self.discord or {set = false} end
 function Fix.HelperMethods:Notify(kind, embed)
   if not Fix.AccessAccepted or not Fix.AccessRead().cloud then return nil, "cloud dashboard is off" end
+  -- the stats message carries a fresh picture of the Roblox window when the helper is running
+  if kind == "update" and self.windows ~= false and self:Up() then pcall(self.Shot, self) end
   return Fix.CloudCall("/api/v1/notify", {name = self.name, kind = kind, embed = embed})
 end
 function Fix.HelperMethods:Log(line)
@@ -7347,6 +7349,23 @@ function Fix.HelperMethods:Request(method, url, body, headers)
 end
 function Fix.HelperMethods:Clipboard() local j, why = self:_Call("/api/clipboard", nil, true) return j and j.text or nil, why end
 function Fix.HelperMethods:Open(url) return self:_Call("/api/open", {url = url}) end
+-- Relaunch Roblox into a private server (helper 1.3.0+): {placeId = , linkCode = } or {shareCode = }.
+function Fix.HelperMethods:Rejoin(target)
+  if type(target) ~= "table" then return false, "no private server" end
+  if not self:Up() then return false, "the matcha helper isn't running" end
+  local j, why = self:_Call("/api/rejoin", {placeId = target.placeId, linkCode = target.linkCode, shareCode = target.shareCode})
+  if not j or j.ok ~= true then return false, why or (j and j.why) or "rejoin failed" end
+  return true
+end
+-- Picture of the Roblox window, uploaded by the helper straight to the dashboard (helper 1.3.0+).
+-- The helper only ever sends it, with this installation's key, to adorablewhale.world.
+function Fix.HelperMethods:Shot()
+  local c = Fix.AccessRead()
+  if type(c.key) ~= "string" or #c.key ~= 64 then return false, "cloud dashboard key missing" end
+  local j, why = self:_Call("/api/shot-upload", {name = self.name, key = c.key})
+  if not j or j.ok ~= true then return false, why or (j and j.why) or "screenshot upload failed" end
+  return true, "screenshot uploaded"
+end
 function Fix.HelperMethods:WriteFile(path, text)
   if not Fix.HelperFeatures(self).files then return nil, "files feature is off" end
   return self:_Call("/api/file", {path = path, text = text})
@@ -7620,8 +7639,11 @@ function Fix.CloudApply(h, command)
     local ok = pcall(row.Set, row, value)
     return ok, ok and "applied" or "callback failed"
   elseif command["do"] and h.actions[command["do"]] then
-    local ok, result = pcall(h.actions[command["do"]].fn)
-    return ok and result ~= false, ok and result ~= false and "done" or "action failed"
+    -- actions may return (ok, message): the message goes back to the dashboard / Discord reply
+    local ok, result, msg = pcall(h.actions[command["do"]].fn)
+    local success = ok and result ~= false and result ~= nil or (ok and result == nil and msg == nil)
+    if not ok then return false, "action failed: " .. tostring(result) end
+    return success, type(msg) == "string" and msg ~= "" and msg or (success and "done" or "action failed")
   end
   return false, "unknown control"
 end

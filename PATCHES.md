@@ -114,3 +114,12 @@ or a running script (`lib:Helper` name/version) is older than the list, it shows
 offers "Reload now", which runs the script's registered autoexec URL. It waits until 6 minutes after
 the list's `published` time so GitHub's raw copy has caught up. Nothing is uploaded.
 Release step: `python Matcha/tools/versions.py`, then deploy the dashboard.
+
+## j5cks-1.4.3 (2026-10-01)
+
+- `H:Rejoin(target)` asks the matcha helper (1.3.0+) to relaunch Roblox into your private server, or any public
+  server when only a place id is given. `H:Shot()` asks it to upload a picture of the Roblox window to the dashboard.
+- `H:Notify("update", ...)` refreshes that picture first, so the Discord stats message shows the game.
+- Dashboard / Discord actions return their own message (`return ok, "why"`) instead of a bare "done".
+- `loader.lua`: a local INSUI or script whose version is higher than the published one wins (dev PCs);
+  everyone else keeps getting the release.
