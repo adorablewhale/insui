@@ -1,5 +1,5 @@
-// Matcha helper 1.1.1. Native Windows Forms host for the readable, tested backend.
-// No obfuscation, elevation, telemetry, updater or remote executable downloads.
+// Matcha helper 1.2.0. Readable native host with signed, idle-only GitHub updates.
+// No obfuscation, elevation or telemetry. Update verification is in Updater.cs.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,12 +10,13 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 [assembly: AssemblyTitle("Matcha helper")]
 [assembly: AssemblyDescription("Optional local Windows features for Matcha scripts")]
-[assembly: AssemblyVersion("1.1.1.0")]
-[assembly: AssemblyFileVersion("1.1.1.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]
 
 static class Program {
     internal static readonly string Root = Path.Combine(KnownFolder("F1B32785-6FBA-4FCF-9D55-7B8E7F157091"), "matcha-helper");
@@ -81,11 +82,13 @@ sealed class HelperWindow : Form {
     readonly EventWaitHandle exitEvent = new EventWaitHandle(false, EventResetMode.AutoReset, "Local\\MatchaHelperExit-" + Program.Sid);
     NotifyIcon tray; Process backend; bool exiting, paused, installed, initializing = true, startHidden;
     string workspace = "C:\\matcha\\workspace", mode = "sleeping";
-    Label heading, detail, scripts, pathLabel; Button pauseButton, installButton; CheckBox startup;
+    Label heading, detail, scripts, pathLabel, updateLabel; Button pauseButton, installButton; CheckBox startup, updates;
+    DateTime nextCheck = DateTime.UtcNow.AddSeconds(10); bool checking, applying, requestedUpdate;
+    string pendingStage;
     readonly string runtime = Path.Combine(Program.Root, "runtime");
     public HelperWindow(string[] args) {
         Text = "matcha helper"; BackColor = Color.FromArgb(14, 18, 16); ForeColor = Ink;
-        Font = new Font("Segoe UI", 10); ClientSize = new Size(520, 564); MinimumSize = MaximumSize = Size;
+        Font = new Font("Segoe UI", 10); ClientSize = new Size(520, 656); MinimumSize = MaximumSize = Size;
         FormBorderStyle = FormBorderStyle.FixedSingle; MaximizeBox = false; StartPosition = FormStartPosition.CenterScreen;
         Icon = MakeIcon(); installed = Application.ExecutablePath.Equals(Program.Exe, StringComparison.OrdinalIgnoreCase);
         startHidden = Array.IndexOf(args, "--tray") >= 0;
@@ -133,6 +136,11 @@ sealed class HelperWindow : Form {
         ButtonAt("view source",installed ? 188 : 348,459,installed ? 142 : 142,delegate { OpenSource(); },false);
         if (installed) ButtonAt("quit",340,459,150,delegate { Quit(); },false);
         LabelAt("closing this window keeps the helper in your tray.\nright-click its whale icon to pause or quit.",30,515,460,36,9,Muted);
+        updates = new CheckBox {Text = "automatically update from signed GitHub releases", Location = new Point(30,560), Size = new Size(460,28), Checked = !File.Exists(Path.Combine(Program.Root,"updates-disabled.txt")), Visible = installed};
+        updates.CheckedChanged += delegate { if (!initializing) { Program.Write(Path.Combine(Program.Root,"updates-disabled.txt"),updates.Checked ? "enabled" : "disabled"); if (updates.Checked) nextCheck = DateTime.UtcNow; } }; Controls.Add(updates);
+        if (File.Exists(Path.Combine(Program.Root,"updates-disabled.txt"))) updates.Checked = File.ReadAllText(Path.Combine(Program.Root,"updates-disabled.txt")).Trim() != "disabled";
+        updateLabel = LabelAt("v1.2.0 · updates apply only while sleeping",30,600,330,35,9,Muted);
+        if (installed) ButtonAt("check updates",366,599,124,delegate { CheckUpdates(true); },false);
     }
     protected override void OnPaint(PaintEventArgs e) {
         base.OnPaint(e); e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -146,6 +154,7 @@ sealed class HelperWindow : Form {
         menu.Items.Add("pause / resume",null,TogglePause);
         menu.Items.Add("open dashboard",null,delegate { Process.Start("https://adorablewhale.world/dashboard"); });
         menu.Items.Add("view source",null,delegate { OpenSource(); });
+        if (installed) menu.Items.Add("check for updates",null,delegate { CheckUpdates(true); });
         menu.Items.Add(new ToolStripSeparator());
         if (installed) menu.Items.Add("uninstall helper",null,Uninstall);
         menu.Items.Add("quit helper",null,delegate { Quit(); });
@@ -197,6 +206,7 @@ sealed class HelperWindow : Form {
     void RefreshStatus() {
         if (exitEvent.WaitOne(0)) { Quit(); return; }
         if (openEvent.WaitOne(0)) Reveal();
+        if (installed && updates.Checked && DateTime.UtcNow >= nextCheck && !checking && pendingStage == null) CheckUpdates(false);
         if (backend == null) {
             if (paused) { mode = "paused"; heading.Text = "paused"; detail.Text = "windows features are paused. your scripts can continue."; scripts.Text = "resume whenever you need the helper again."; }
             tray.Text = "matcha helper — " + (paused ? "paused" : "ready"); return;
@@ -211,7 +221,29 @@ sealed class HelperWindow : Form {
             detail.Text = mode == "awake" ? "connected. enabled windows features are ready." : "waiting for a script. automatic features are resting.";
             scripts.Text = names.Length > 0 ? String.Join(" · ",names) : "load a script in Matcha — i'll wake up automatically.";
             tray.Text = "matcha helper — " + heading.Text;
+            if (pendingStage != null && HelperUpdater.CanApply(installed,backend != null,paused,mode,updates.Checked,requestedUpdate)) ApplyUpdate();
         } catch (IOException) {} catch (ArgumentException) {} catch (KeyNotFoundException) {}
+    }
+    void CheckUpdates(bool manual) {
+        if (checking || applying) return;
+        if (pendingStage != null) { requestedUpdate |= manual; updateLabel.Text = "update ready · waiting for scripts to sleep"; return; }
+        checking = true; requestedUpdate = manual; nextCheck = DateTime.UtcNow.AddHours(4); updateLabel.Text = "checking signed GitHub releases…";
+        Task.Run(delegate {
+            string stage = null, message = "v1.2.0 · up to date";
+            try {
+                var candidate = HelperUpdater.Check(Assembly.GetExecutingAssembly().GetName().Version, Program.Resource("UpdateKey"));
+                if (candidate != null) { stage = HelperUpdater.Stage(candidate,HelperUpdater.Download(candidate.Url,HelperUpdater.MaxPackage)); message = "v"+candidate.Manifest.version+" ready · waiting for sleep"; }
+            } catch { message = "update unavailable · current version keeps working"; }
+            try { if (!exiting && !IsDisposed) BeginInvoke((Action)delegate { checking = false; pendingStage = stage; updateLabel.Text = message; }); } catch (InvalidOperationException) {}
+        });
+    }
+    void ApplyUpdate() {
+        if (applying || pendingStage == null || !HelperUpdater.CanApply(installed,backend != null,paused,mode,updates.Checked,requestedUpdate)) return;
+        applying = true;
+        try {
+            var info = new ProcessStartInfo(Program.PS,"-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \""+Path.Combine(pendingStage,"install.ps1")+"\" -Update -Tray -WaitPid "+Process.GetCurrentProcess().Id) {UseShellExecute = false, CreateNoWindow = true};
+            Process.Start(info); Quit();
+        } catch { applying = false; updateLabel.Text = "update could not start · try again later"; }
     }
     void OpenSource() { Process.Start("notepad.exe","\"" + Path.Combine(runtime,"source-code.txt") + "\""); }
     string SetupStage() {

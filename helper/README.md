@@ -1,41 +1,50 @@
 # Matcha helper
 
-Install once with `install.ps1` beside `matcha-helper.bat` (or the website download's
-`install.cmd`). It copies the helper into `%LOCALAPPDATA%/matcha-helper`, creates a
-per-user Startup shortcut, and starts hidden now and at login. No administrator
-rights or system-wide changes. A different workspace can be supplied with
-`-Workspace "path"`. The website's Account tab shows the helper's heartbeat.
+Download [installer.exe](https://adorablewhale.world/downloads/installer.exe) from
+Account or [the stable GitHub release](https://github.com/adorablewhale/matcha-helper/releases/latest).
+Open it, choose the Matcha workspace and press Install. No unzipping or administrator
+rights. Search **Matcha helper** in Windows to open the status window; optional
+Startup starts it in the tray. Close hides the window; tray Quit stops the backend.
 
-Uninstall with `powershell -NoProfile -ExecutionPolicy Bypass -File
-"%LOCALAPPDATA%/matcha-helper/install.ps1" -Uninstall`, or `uninstall.cmd` from the
-download. It stops only the matching installed process (checks command line and
-creation time), removes its startup shortcut, and moves managed files to the Recycle
-Bin. Unknown files and Matcha settings remain. Close a legacy helper before installing.
+Helper 1.2.0 checks signed stable GitHub releases at startup/every four hours and
+applies them while sleeping. A pinned RSA key verifies metadata; the ZIP digest,
+size, exact file list and binary version are checked before installation. Pause
+delays updates. Turn automatic updates off or check manually in the window/tray.
+Network or verification failure leaves the installed helper working. Workspace,
+startup and script settings survive updates.
 
-The manual BAT remains available: double-click it and keep its window open.
-One helper instance serves every INSUI script on localhost port 47210.
-FischHub's Discord webhook is now configured only on the hosted website; local
-FischHub mode has no webhook. Cloud controls/Discord do not need this helper.
-Windows focus, clipboard, local files and screenshots are its optional capabilities.
+Canonical source is `Matcha/tools/helper` and public `adorablewhale/matcha-helper`.
+This `native/` folder is a generated readable distribution copy; edit canonical
+source and refresh the mirror. `source-code.txt` contains the complete app, updater,
+installer and build tools. Signing material is private outside Git. See
+native/README.txt for builds, tests and approved release publication.
 
-Features are optional per script. Legacy integrations can still use local webhook
-configuration; new FischHub uses website Discord settings instead. The watchdog sends one alert after two minutes without updates while armed;
-unloading suppresses it. AFK is off by default and waits for three seconds of user idle time.
-It checks Roblox really has focus, taps O/I at most once a minute, and restores the prior window.
-Generic AFK activates after the background interval on the page (default ten minutes).
+The installed files live under `%LOCALAPPDATA%/matcha-helper`. Uninstall from the
+tray or the package's uninstall.cmd. It stops only verified helper processes and
+recycles managed files and Start menu/Startup shortcuts, preserving script settings
+and unknown files. Shutdown validates the real EXE/backend path and creation time
+even when process.json is stale. The backend accepts UTF-8 JSON with or without a BOM.
 
-The helper binds only to 127.0.0.1. Host/Origin checks and a random per-start token protect tools
-and commands. Files can be written only under C:/matcha/workspace or C:/matcha/autoexec, with
-canonical path checks and no symlinks/junctions or alternate data streams. Roblox screenshots
-capture its window only. Feature switches/config and protocol files stay in INSUI/helper under
-Matcha's workspace. Webhook URLs and token.txt are local secrets; never publish them.
+The manual BAT remains available: double-click and keep its window open. Use one
+helper on localhost port 47210. Features are optional per script; `windows=false`
+never wakes it. Fresh accepted local state wakes the native helper, and stale/unloaded
+scripts put it to sleep. Sleep does no automatic focus/input/screenshots. Pause
+stops Windows features; cloud dashboards/Discord continue without the helper.
 
-Developers: lib:Helper({name,version,features}) supplies state, Log, Watch, NeedFocus, Action,
-Enabled, Up, Webhook, Request, Clipboard, Open and WriteFile. Up reads helper.json's heartbeat,
-so a stopped helper does not stall Matcha with an HTTP probe. INSUI writes state every two seconds,
-checks commands every half second, skips preexisting commands, validates menu values and marks
-unloaded on Destroy. FischHub's legacy /ping and webhook relay endpoints remain compatible.
-FischHub retains its legacy Dash files; its old helper filename now launches this helper.
+AFK is off by default, waits for user idle time, checks focus before O/I and restores
+the previous window. Generic AFK uses the configured background interval. A separately
+armed local watchdog may send its one disconnect alert after a stall.
 
-Local acceptance tests and screenshots: the Matcha kit's VERIFICATION.md. Changes are unreleased
-until the owner approves commits and publication.
+The listener binds only to 127.0.0.1 with Host/Origin checks and a per-start local
+token. File writes use canonical workspace/autoexec paths and reject linked paths
+and alternate streams. Screenshots capture Roblox only. Never publish token.txt,
+webhook URLs or private workspace configuration. FischHub's Discord settings live
+on the hosted website, with encrypted URLs never returned to the script.
+
+`lib:Helper({name,version,windows,features})` supplies state, Log, Watch, NeedFocus,
+Action, Enabled, Up, Request, Clipboard, Open and WriteFile. Up reads the heartbeat;
+it does not block Matcha with an HTTP probe. INSUI writes state every two seconds,
+validates commands, rejects preexisting commands and marks unload on Destroy.
+
+Evidence: the Matcha kit's VERIFICATION.md and HANDOFF_V2.md. Future publication and
+Discord announcements require the owner's respective authorization.

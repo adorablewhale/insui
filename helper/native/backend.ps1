@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$Version = '1.1.1'
+$Version = '1.2.0'
 $Port = 47210
 $StallSec = 120
 $Workspace = 'C:\matcha\workspace'
@@ -226,7 +226,7 @@ function Read-Shared([string]$path, [long]$from = 0) {
 function Read-Json([string]$path) {
   $r = Read-Shared $path
   if (-not $r) { return $null }
-  try { return ([Text.Encoding]::UTF8.GetString($r.bytes) | ConvertFrom-Json) } catch { return $null }
+  try { return ([Text.Encoding]::UTF8.GetString($r.bytes).TrimStart([char]0xFEFF) | ConvertFrom-Json) } catch { return $null }
 }
 
 function Send([Net.Sockets.NetworkStream]$stream, [int]$status, [string]$type, [byte[]]$body, [string]$extra = '') {
