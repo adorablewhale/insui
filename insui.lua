@@ -4580,7 +4580,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.3" }
+local InsUi = { _state = State, Version = "j5cks-1.4.4" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -7799,13 +7799,15 @@ function Fix.UpdateStep()
     Fix.UpdateBusy = false
   end)
 end
-function InsUi:AddCloudTab(win)
-  local section = win:Tab("Cloud dashboard", "sliders"):Section("Your installation", "Full", "Your data, dashboard key and private dashboard")
-  section:Info("adorablewhale.world/dashboard | Copy your private key below. Anyone with the key can change your running script's cloud controls.")
-  section:Label(function() return "Cloud: " .. tostring(Fix.CloudStatus or "not connected") end)
-  section:Label(function() local c = Fix.AccessRead() return "Key: " .. (type(c.key) == "string" and (string.rep("*", 12) .. c.key:sub(-4)) or "not generated yet") end)
-  section:Label(function() local c = Fix.AccessRead() return "Data sharing: " .. ((c.cloud and c.reporting) and "on (required by the agreement)" or "off") end)
-  section:Button("Turn off data sharing", function()
+-- tab: put the section on a script's own tab (right column) instead of a separate "cloud dashboard" tab.
+function InsUi:AddCloudTab(win, tab)
+  local section = tab and tab:Section("dashboard", "Right", "your key, your data")
+    or win:Tab("cloud dashboard", "sliders"):Section("your installation", "Full", "your data, dashboard key and private dashboard")
+  section:Info("adorablewhale.world/dashboard. copy your private key below; anyone with the key can change your running script's controls.")
+  section:Label(function() return "cloud: " .. tostring(Fix.CloudStatus or "not connected") end)
+  section:Label(function() local c = Fix.AccessRead() return "key: " .. (type(c.key) == "string" and (string.rep("*", 12) .. c.key:sub(-4)) or "not made yet") end)
+  section:Label(function() local c = Fix.AccessRead() return "data sharing: " .. ((c.cloud and c.reporting) and "on (the agreement needs it)" or "off") end)
+  section:Button("turn off data sharing", function()
     self:Dialog({title = "Turn off data sharing?", text = "Your launches, sessions and dashboard data stop being sent.", warning = "The scripts will close now and will not run again until you agree to the agreement again.",
       confirm = "Turn off and close", cancel = "Keep sharing", modal = true, onConfirm = function() task.spawn(function()
         for _, h in pairs(Fix.Helpers) do if h.cloudRun then pcall(Fix.CloudSync, h, true) end end
@@ -7813,17 +7815,17 @@ function InsUi:AddCloudTab(win)
         Fix.AccessRevoke(self, "You turned off data sharing.")
       end) end})
   end):SetRisk()
-  section:Button("Copy dashboard key", function()
+  section:Button("copy dashboard key", function()
     local c = Fix.AccessRead()
     if type(c.key) == "string" then setclipboard(c.key) self:Notify("Dashboard key", "Copied. Keep this key private.", 5, "info") else self:Notify("Dashboard key", "Enable cloud mode and wait for a connection first.", 5, "warning") end
-  end):AddButton("Copy dashboard URL", function() setclipboard(Fix.CloudOrigin .. "/dashboard") end)
-  section:Button("Replace dashboard key", function()
+  end):AddButton("copy dashboard link", function() setclipboard(Fix.CloudOrigin .. "/dashboard") end)
+  section:Button("replace dashboard key", function()
     self:Dialog({title = "Replace private key?", text = "The old key and every browser session using it will stop working. Copy the new key afterwards.", confirm = "Replace key", onConfirm = function() task.spawn(function()
       local result, why = Fix.CloudCall("/api/v1/rotate", {})
       if result then local c = Fix.AccessRead() c.key = result.key Fix.AccessSave(c) self:Notify("Dashboard key", "Replaced. Copy the new key to sign in.", 6, "success") else self:Notify("Dashboard key", why, 6, "error") end
     end) end})
   end):SetRisk()
-  section:Button("Delete my data", function()
+  section:Button("delete my data", function()
     self:Dialog({title = "Delete your data?", text = "Deletes your launch and session history from adorablewhale.world and turns data sharing off.", warning = "The scripts will close now and will not run again until you agree to the agreement again.",
       confirm = "Delete and close", cancel = "Keep my data", modal = true, onConfirm = function() task.spawn(function()
       local result, why = Fix.CloudCall("/api/v1/delete-history", {})

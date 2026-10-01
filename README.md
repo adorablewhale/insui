@@ -21,7 +21,7 @@ local lib = _G.INSUI
 - **settings that save** — configs, autosave and autoload per script
 - **a hud** — floating boxes for live stats
 - **autoexec** — pick which scripts run in which games from the gear tab
-- **cloud dashboard** — check and change your script from your phone at adorablewhale.world
+- **cloud dashboard** — check and change your script from your phone at adorablewhale.world; scripts can place it on their own online tab
 - **update notices** — it tells you when a newer version is out
 - **one clear agreement** — users see exactly what's shared before anything loads
 - **clean unload** — reinject as often as you like, nothing is left behind

@@ -306,6 +306,18 @@ Lib:Destroy()   -- removes every drawing and picture, saves the config if autoSa
 Upstream's README also lists `sec:Image`, `win:Unload` and `win:autoloadConfig`, but they
 don't exist in the library.
 
+## Cloud dashboard section
+
+```lua
+Lib:AddCloudTab(win)                -- a separate cloud dashboard tab
+local online = win:Tab("online", "cloud")
+Lib:AddCloudTab(win, online)        -- dashboard section in this tab's right column (1.4.4)
+```
+
+the section provides masked key display, copy/replace controls and data-sharing/deletion actions.
+pass a tab belonging to the same window. the optional tab argument preserves existing one-argument callers.
+windows helper features remain a separate opt-in; cloud controls do not require the helper.
+
 ## Credit
 
 The original library is by [neaxusxgod-png](https://github.com/neaxusxgod-png/INS-ui). This fork
