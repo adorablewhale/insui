@@ -105,3 +105,12 @@ settings. It says the owner sees this on an admin page.
   unloads every helper's `_G[name].Unload()` and destroys the UI. The next load asks again.
 - The server accepts the old version so older copies keep syncing; live/session data only appears
   for launches under the new wording.
+
+## j5cks-1.4.2 (2026-10-01)
+
+Update notices. A minute after load and then every 15 minutes, INSUI downloads
+`adorablewhale.world/versions.json` (no-store, so it doesn't share GitHub's raw-cache lag). If INSUI
+or a running script (`lib:Helper` name/version) is older than the list, it shows one notice and
+offers "Reload now", which runs the script's registered autoexec URL. It waits until 6 minutes after
+the list's `published` time so GitHub's raw copy has caught up. Nothing is uploaded.
+Release step: `python Matcha/tools/versions.py`, then deploy the dashboard.

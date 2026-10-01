@@ -4580,7 +4580,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.1" }
+local InsUi = { _state = State, Version = "j5cks-1.4.2" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -7724,6 +7724,59 @@ function InsUi:FlushCloud()
     end
   end)
 end
+-- Update notices: adorablewhale.world/versions.json (no-store, so no GitHub raw-cache lag) lists
+-- the latest published INSUI and script versions. A minute after load and then every 15 minutes,
+-- anything older than that gets one notice and a "reload now" offer (the script's registered
+-- autoexec URL). Nothing is sent: it is a plain download of a public file.
+Fix.UpdateNext, Fix.UpdateSeen = os.clock() + 60, {}
+function Fix.VersionNewer(latest, current)
+  local function parts(v) local t = {} for n in tostring(v):gmatch("%d+") do t[#t + 1] = tonumber(n) end return t end
+  local a, b = parts(latest), parts(current)
+  for i = 1, math.max(#a, #b) do
+    if (a[i] or 0) ~= (b[i] or 0) then return (a[i] or 0) > (b[i] or 0) end
+  end
+  return false
+end
+function Fix.UpdateOffer(name, latest, current, url)
+  local key = name .. "@" .. tostring(latest)
+  if Fix.UpdateSeen[key] then return end
+  Fix.UpdateSeen[key] = true
+  local low = string.lower(name)
+  InsUi:Notify("Update available", low .. " " .. tostring(latest) .. " is out (you have " .. tostring(current) .. "). Reinject to update.", 12, "info")
+  if not url or State.Dialog then return end
+  InsUi:Dialog({title = "Update " .. low .. "?", text = low .. " " .. tostring(latest) .. " is out; you are running " .. tostring(current) .. ". Reload now to get it. Your settings are kept.",
+    confirm = "Reload now", cancel = "Later", onConfirm = function() task.spawn(function()
+      local ok, src = pcall(function() return game:HttpGet(url) end)
+      local fn = ok and type(src) == "string" and loadstring(src)
+      if fn then pcall(fn) else InsUi:Notify("Update", "Could not download the update; reinject later.", 6, "error") end
+    end) end})
+end
+function Fix.UpdateStep()
+  if Fix.UpdateBusy or os.clock() < Fix.UpdateNext then return end
+  Fix.UpdateBusy, Fix.UpdateNext = true, os.clock() + 900
+  task.spawn(function()
+    pcall(function()
+      local v = HttpService:JSONDecode(game:HttpGet(Fix.CloudOrigin .. "/versions.json"))
+      if type(v) ~= "table" then return end
+      -- GitHub's raw files lag a release by up to ~5 minutes: offer it once they have caught up
+      if tonumber(v.published) and os.time() - tonumber(v.published) < 360 then Fix.UpdateNext = os.clock() + 120 return end
+      local auto = Fix.HelperRead(Fix.AutoexecFile) or {}
+      local scripts = type(auto.scripts) == "table" and auto.scripts or {}
+      if type(v.insui) == "table" and Fix.VersionNewer(v.insui.version, InsUi.Version) then
+        -- INSUI updates arrive with the next script load; offer that script's reload
+        local url for name in pairs(Fix.Helpers) do url = url or (scripts[name] and scripts[name].url) end
+        Fix.UpdateOffer("INSUI", v.insui.version, InsUi.Version, url)
+      end
+      for name, h in pairs(Fix.Helpers) do
+        local latest = type(v.scripts) == "table" and type(v.scripts[name]) == "table" and v.scripts[name].version
+        if latest and h.version and Fix.VersionNewer(latest, h.version) then
+          Fix.UpdateOffer(name, latest, h.version, scripts[name] and scripts[name].url)
+        end
+      end
+    end)
+    Fix.UpdateBusy = false
+  end)
+end
 function InsUi:AddCloudTab(win)
   local section = win:Tab("Cloud dashboard", "sliders"):Section("Your installation", "Full", "Your data, dashboard key and private dashboard")
   section:Info("adorablewhale.world/dashboard | Copy your private key below. Anyone with the key can change your running script's cloud controls.")
@@ -7824,6 +7877,7 @@ task.spawn(function()
     Fix.AutoSaveStep()
     Fix.HelperStep()
     Fix.CloudStep()
+    Fix.UpdateStep()
 
     local Over = State.SpotlightOpen or State.Dialog ~= nil
     local Click, Right, Down = Input.Click, Input.Right, Input.Down
