@@ -4,7 +4,18 @@
 -- Load:  local lib = loadstring(game:HttpGet("https://raw.githubusercontent.com/adorablewhale/insui/main/insui.lua"))()
 --        (Matcha's loadstring drops return values: if lib is nil, use _G.INSUI.)
 local HttpService = game:GetService("HttpService")
-local Camera = workspace.CurrentCamera
+-- Camera.ViewportSize is read live: under autoexec INSUI can load before the game's camera is
+-- ready (or before Roblox swaps it in), when the viewport reads ~0 and a centred window lands
+-- off the top-left with its drag bar unreachable. A junk size falls back to the last good one.
+local Camera do
+  local LastView = Vector2.new(1920, 1080)
+  Camera = setmetatable({}, {__index = function(_, key)
+    if key ~= "ViewportSize" then return nil end
+    local ok, view = pcall(function() return workspace.CurrentCamera.ViewportSize end)
+    if ok and view and view.X >= 320 and view.Y >= 240 then LastView = view end
+    return LastView
+  end})
+end
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
@@ -4258,7 +4269,8 @@ local function DrawDialog()
 
   local Room = Layout.DialogWidth - Layout.DialogInset * 2
   local Lines = WrapText(Dialog.Text, Room, Layout.TextSize, SystemFont)
-  local Height = Layout.DialogBase + #Lines * Layout.DialogLine
+  local Warn = Dialog.Warning and WrapText(Dialog.Warning, Room, Layout.TextSize, BoldFont) or {}
+  local Height = Layout.DialogBase + (#Lines + #Warn + (#Warn > 0 and 1 or 0)) * Layout.DialogLine
   local BoxX = math.floor(View.X / 2 - Layout.DialogWidth / 2)
   local BoxY = math.floor(View.Y / 2 - Height / 2) - math.floor((1 - Fade) * Layout.DialogLift)
   local Accent = Blend(Theme.AccentA, Theme.AccentB, Layout.ShimmerMix)
@@ -4286,6 +4298,7 @@ local function DrawDialog()
   DrawText(Dialog.Title, TextX, TitleY, Accent, Layout.DialogTitle, BoldFont, 454, Fade, Room)
 
   for Index = 1, #Lines do DrawText(Lines[Index], TextX, BodyY + (Index - 1) * Layout.DialogLine, Theme.Text, Layout.TextSize, SystemFont, 454, Alpha.Label * Fade, Room) end
+  for Index = 1, #Warn do DrawText(Warn[Index], TextX, BodyY + (#Lines + Index) * Layout.DialogLine, Color3.fromRGB(255, 92, 92), Layout.TextSize, BoldFont, 454, Fade, Room) end
 
   DrawStroke(CancelX, ButtonY, ButtonWidth, Layout.DialogButton, Theme.Text, 454, Layout.DialogButtonRadius, CancelEdge)
   DrawTextMid(Dialog.Cancel, CancelX + ButtonWidth / 2, ButtonTextY, Theme.Text, Layout.TextSize, BoldFont, 455, CancelLabel)
@@ -4312,7 +4325,7 @@ local function DrawDialog()
     return
   end
 
-  if not CancelHover and not Outside then return end
+  if not CancelHover and (Dialog.Modal or not Outside) then return end
 
   State.Dialog = nil
   Dialog.OnCancel()
@@ -4567,7 +4580,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.0" }
+local InsUi = { _state = State, Version = "j5cks-1.4.1" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -5209,6 +5222,8 @@ function InsUi:Dialog(options)
     Text = tostring(options.text or ""),
     Confirm = tostring(options.confirm or "Confirm"),
     Cancel = tostring(options.cancel or "Cancel"),
+    Warning = options.warning and tostring(options.warning) or nil,   -- drawn in red under the text
+    Modal = options.modal == true,                                     -- outside clicks don't cancel
     OnConfirm = options.onConfirm or function() end,
     OnCancel = options.onCancel or function() end,
   }
@@ -7201,6 +7216,7 @@ local function DrawMenu()
   end
 
   ApplyDrag()
+  ClampWindow()   -- every frame: a window placed against a bad viewport comes back on screen
   ArrowTabs()
 
   local Rail = RailWidth()
@@ -7500,8 +7516,9 @@ end
 
 
 -- Hosted dashboard and terms. No new top-level locals: keep the INSUI register budget.
-Fix.AccessVersion = "2026-09-30.1"
-Fix.AccessTerms = "These third-party scripts run in Matcha and may automate gameplay or change client values when you enable features. Features may fail or change after game updates. You can disable features or unload the script at any time. Cloud dashboards and named launch reporting are optional and explained separately."
+Fix.AccessVersion = "2026-10-01.1"
+Fix.AccessTerms = "These third-party scripts run in Matcha and can automate gameplay or change client values when you turn features on. They may break after game updates; you can turn features off or unload at any time. To use them you agree that adorablewhale.world receives and keeps for 30 days: your Roblox username and user ID, the script and version, the game, when you launch it, whether it is running right now and how long each session lasts, plus the script's status, counters and menu settings for your private cloud dashboard. The owner (adorablewhale) sees this on an admin page. No passwords, chat or debug logs are sent. You can delete your data from the website or the Cloud dashboard tab at any time, but then the scripts will not run until you agree again."
+Fix.AccessWarning = "If you disagree, the script will not load."
 Fix.CloudOrigin = "https://adorablewhale.world"
 Fix.AccessFile = "INSUI/cloud/access.json"
 Fix.CloudBusy = false
@@ -7513,39 +7530,53 @@ function Fix.AccessSave(c)
   Fix.MakeDirs(Fix.AccessFile:match("^(.*)/[^/]*$") or "INSUI")
   return Fix.HelperWrite(Fix.AccessFile, c)
 end
-function Fix.AccessAsk(lib, options, title, text, confirm, cancel)
+function Fix.AccessAsk(lib, options, title, text, confirm, cancel, warning)
   local done, accepted = false, false
   lib:SetOpen(false)
-  lib:Dialog({title = title, text = text, confirm = confirm, cancel = cancel,
+  lib:Dialog({title = title, text = text, confirm = confirm, cancel = cancel, warning = warning, modal = warning ~= nil,
     onConfirm = function() done, accepted = true, true end,
     onCancel = function() done, accepted = true, false end})
   while not done and State.Alive and (not options.alive or options.alive()) do task.wait(0.1) end
   if not done then State.Dialog = nil end
   return done and accepted
 end
+-- One agreement covers the terms, the cloud dashboard and named reporting. Disagreeing (or having
+-- removed the data earlier) means the script does not load.
 function InsUi:RequireTerms(options)
   options = options or {}
   local c = Fix.AccessRead()
-  if c.terms ~= Fix.AccessVersion then
-    if not Fix.AccessAsk(self, options, "Terms to use these scripts", Fix.AccessTerms, "Agree and load", "Decline") then return false, "terms declined" end
-    c.terms = Fix.AccessVersion
+  if c.terms ~= Fix.AccessVersion or c.cloud ~= true or c.reporting ~= true then
+    if not Fix.AccessAsk(self, options, "Agreement to use these scripts", Fix.AccessTerms, "I agree", "Disagree", Fix.AccessWarning) then
+      self:Notify("Script not loaded", "You disagreed with the agreement, so the script did not load.", 10, "error")
+      return false, "terms declined"
+    end
+    if not State.Alive or (options.alive and not options.alive()) then return false, "unloaded during setup" end
+    c.terms, c.cloud, c.reporting = Fix.AccessVersion, true, true
+    c.cloudChoice, c.reportChoice, c.reportPending = true, true, true
     if not Fix.AccessSave(c) then return false, "could not save acceptance" end
-  end
-  if c.cloudChoice ~= true then
-    c.cloud = Fix.AccessAsk(self, options, "Optional cloud dashboard", "Cloud mode sends reviewed script status, counters and menu controls to adorablewhale.world. Anyone with your dashboard key can change those controls. No raw debug logs or passwords are uploaded. You can turn this off in settings.", "Enable dashboard", "Keep local")
-    if not State.Alive or (options.alive and not options.alive()) then return false, "unloaded during setup" end
-    c.cloudChoice = true
-    Fix.AccessSave(c)
-  end
-  if c.reportChoice ~= true then
-    c.reporting = Fix.AccessAsk(self, options, "Optional named launch reporting", "Reporting starts off. If you enable it, adorablewhale.world stores your Roblox username/user ID, script/version, game name/IDs and launch time in the owner's admin history for 30 days. This is separate from your cloud dashboard. You can opt out and delete your history.", "Enable reporting", "Keep reporting off")
-    if not State.Alive or (options.alive and not options.alive()) then return false, "unloaded during setup" end
-    c.reportChoice, c.reportPending = true, c.reporting == true
-    Fix.AccessSave(c)
   end
   Fix.AccessAccepted = true
   self:SetOpen(true)
   return true
+end
+-- Data sharing was removed (here or on the website): forget the agreement, warn in red and close
+-- every running script; it asks again on the next load.
+function Fix.AccessRevoke(lib, why)
+  if Fix.AccessRevoked then return end
+  Fix.AccessRevoked = true
+  local c = Fix.AccessRead()
+  c.terms, c.cloud, c.reporting, c.reportPending = nil, false, false, false
+  Fix.AccessSave(c)
+  Fix.AccessAccepted = false
+  lib:Notify("Script closing", tostring(why) .. " The scripts need it to run, so they are closing. Run one again and agree to keep using them.", 12, "error")
+  task.spawn(function()
+    task.wait(3)
+    for _, h in pairs(Fix.Helpers) do
+      local api = rawget(_G, h.name)
+      if type(api) == "table" and type(api.Unload) == "function" then pcall(api.Unload) end
+    end
+    if State.Alive then pcall(lib.Destroy, lib) end
+  end)
 end
 function Fix.CloudCall(route, value, noKey)
   local c = Fix.AccessRead()
@@ -7625,9 +7656,8 @@ function Fix.CloudSync(h, unloaded)
   h.cloudAcks, h.cloudStart = {}, false
   h.discord = type(result.discord) == "table" and result.discord or {set = false}
   if c.reporting and result.reporting == false then
-    c.reporting, c.reportPending = false, false
-    Fix.AccessSave(c)
-    if State.CloudReportRow then State.CloudReportRow.Value = false end
+    Fix.AccessRevoke(InsUi, "Data sharing was turned off on the website.")
+    return result
   end
   for _, command in ipairs(not unloaded and result.commands or {}) do
     if type(command.id) == "string" and not h.cloudSeen[command.id] then
@@ -7695,30 +7725,19 @@ function InsUi:FlushCloud()
   end)
 end
 function InsUi:AddCloudTab(win)
-  local section = win:Tab("Cloud dashboard", "sliders"):Section("Your installation", "Full", "Optional cloud syncing and separate named reporting")
+  local section = win:Tab("Cloud dashboard", "sliders"):Section("Your installation", "Full", "Your data, dashboard key and private dashboard")
   section:Info("adorablewhale.world/dashboard | Copy your private key below. Anyone with the key can change your running script's cloud controls.")
   section:Label(function() return "Cloud: " .. tostring(Fix.CloudStatus or "not connected") end)
   section:Label(function() local c = Fix.AccessRead() return "Key: " .. (type(c.key) == "string" and (string.rep("*", 12) .. c.key:sub(-4)) or "not generated yet") end)
-  local cloud
-  cloud = section:Toggle("Enable cloud dashboard", Fix.AccessRead().cloud == true, function(on)
-    local function apply(value) local c = Fix.AccessRead() c.cloud = value Fix.AccessSave(c) cloud.Value = value Fix.CloudNext = 0 end
-    if on then self:Dialog({title = "Enable cloud dashboard?", text = "Reviewed script status, counters and controls go to adorablewhale.world. Your key permits remote setting changes. Raw debug logs and passwords stay local.", confirm = "Enable dashboard", cancel = "Keep local", onConfirm = function() apply(true) end, onCancel = function() apply(false) end}) else
-      -- Stop stale remote controls/alerts promptly, then stop syncing.
-      apply(false)
-      task.spawn(function() for _, h in pairs(Fix.Helpers) do if h.cloudRun then pcall(Fix.CloudSync, h, true) end end end)
-    end
-  end)
-  cloud.HelperPrivate, cloud.CloudPrivate, cloud.NoSave = true, true, true
-  local report
-  report = section:Toggle("Named launch reporting", Fix.AccessRead().reporting == true, function(on)
-    local function apply(value) local c = Fix.AccessRead() c.reporting, c.reportPending = value, true Fix.AccessSave(c) Fix.CloudNext = 0
-      report.Value = value
-      if not value then task.spawn(function() Fix.CloudCall("/api/v1/consent", {reporting = false}) end) end
-    end
-    if on then self:Dialog({title = "Enable named reporting?", text = "Send Roblox username/user ID, script/version, game name/IDs and launch time to the owner's admin history on adorablewhale.world. Retained 30 days. Reporting is optional; disabling it does not stop your script.", confirm = "Enable reporting", cancel = "Keep reporting off", onConfirm = function() apply(true) end, onCancel = function() apply(false) end}) else apply(false) end
-  end)
-  report.HelperPrivate, report.CloudPrivate, report.NoSave = true, true, true
-  State.CloudReportRow = report   -- CloudSync turns it off when the server says reporting is off
+  section:Label(function() local c = Fix.AccessRead() return "Data sharing: " .. ((c.cloud and c.reporting) and "on (required by the agreement)" or "off") end)
+  section:Button("Turn off data sharing", function()
+    self:Dialog({title = "Turn off data sharing?", text = "Your launches, sessions and dashboard data stop being sent.", warning = "The scripts will close now and will not run again until you agree to the agreement again.",
+      confirm = "Turn off and close", cancel = "Keep sharing", modal = true, onConfirm = function() task.spawn(function()
+        for _, h in pairs(Fix.Helpers) do if h.cloudRun then pcall(Fix.CloudSync, h, true) end end
+        Fix.CloudCall("/api/v1/consent", {reporting = false})
+        Fix.AccessRevoke(self, "You turned off data sharing.")
+      end) end})
+  end):SetRisk()
   section:Button("Copy dashboard key", function()
     local c = Fix.AccessRead()
     if type(c.key) == "string" then setclipboard(c.key) self:Notify("Dashboard key", "Copied. Keep this key private.", 5, "info") else self:Notify("Dashboard key", "Enable cloud mode and wait for a connection first.", 5, "warning") end
@@ -7729,9 +7748,12 @@ function InsUi:AddCloudTab(win)
       if result then local c = Fix.AccessRead() c.key = result.key Fix.AccessSave(c) self:Notify("Dashboard key", "Replaced. Copy the new key to sign in.", 6, "success") else self:Notify("Dashboard key", why, 6, "error") end
     end) end})
   end):SetRisk()
-  section:Button("Delete my launch history", function()
-    self:Dialog({title = "Delete launch history?", text = "Delete your installation's previous named launch records from the admin server. This does not disable future reporting.", confirm = "Delete history", onConfirm = function() task.spawn(function()
-      local result, why = Fix.CloudCall("/api/v1/delete-history", {}) self:Notify("Launch history", result and "Deleted" or why, 5, result and "success" or "error")
+  section:Button("Delete my data", function()
+    self:Dialog({title = "Delete your data?", text = "Deletes your launch and session history from adorablewhale.world and turns data sharing off.", warning = "The scripts will close now and will not run again until you agree to the agreement again.",
+      confirm = "Delete and close", cancel = "Keep my data", modal = true, onConfirm = function() task.spawn(function()
+      local result, why = Fix.CloudCall("/api/v1/delete-history", {})
+      if not result then self:Notify("Delete data", why, 6, "error") return end
+      Fix.AccessRevoke(self, "You deleted your data.")
     end) end})
   end):SetRisk()
 end

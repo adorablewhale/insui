@@ -79,3 +79,29 @@ show up in a Roblox-window capture.
 ## j5cks-1.2.0 (local candidate, 2026-09-30)
 
 Universal lib:Helper client and helper/matcha-helper.bat: per-script dashboard/commands, heartbeat availability, relay edits/screenshots, watchdog, checked AFK focus, HTTP/clipboard/files/loader tools. All new library internals live on Fix; 193 top-level locals. See helper/README.md. Not committed or published.
+
+## j5cks-1.4.1 (2026-10-01)
+
+Window stuck off-screen on autoexec. INSUI captured `workspace.CurrentCamera` once at load and
+centred the window on its `ViewportSize`. Under autoexec, right after joining, the viewport can
+read ~0 (the camera isn't ready, or Roblox swaps in a new one), so the window landed at about
+`(-W/2, -H/2)`. Its drag bar was off-screen, and `ClampWindow` only ran while dragging, so it
+couldn't be moved until the VM was reset.
+- `Camera.ViewportSize` is read live from the current camera. A size under 320x240 falls back
+  to the last good one (1920x1080 before any).
+- `ClampWindow()` runs every frame, so a window placed against a bad viewport, or a saved
+  off-screen position, comes back on screen.
+Still 193 top-level locals.
+
+One agreement (terms `2026-10-01.1`). The separate terms, cloud and reporting prompts are now a
+single agreement. It lists everything kept for 30 days: Roblox name/ID, script/version, game,
+launch time, whether a script is running and session length, and dashboard status/counters/
+settings. It says the owner sees this on an admin page.
+- "Disagree" is shown in red ("If you disagree, the script will not load."). The dialog is modal:
+  only the buttons or Esc decide.
+- `lib:Dialog` gained `warning` (red bold lines) and `modal`.
+- Turning data sharing off (Cloud tab), deleting your data (Cloud tab or website), or turning it
+  off on the website calls `Fix.AccessRevoke`. It forgets the agreement, shows a red notice,
+  unloads every helper's `_G[name].Unload()` and destroys the UI. The next load asks again.
+- The server accepts the old version so older copies keep syncing; live/session data only appears
+  for launches under the new wording.
