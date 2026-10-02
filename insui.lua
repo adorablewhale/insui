@@ -4580,7 +4580,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.4" }
+local InsUi = { _state = State, Version = "j5cks-1.4.5" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -7704,6 +7704,19 @@ function Fix.CloudStep()
   if Fix.CloudBusy or not Fix.AccessAccepted or os.clock() < Fix.CloudNext then return end
   local c = Fix.AccessRead()
   if not c.cloud and not c.reporting then return end
+  -- A sync blocks the whole VM for about a second (Matcha HTTP is synchronous). A script can set
+  -- h.quiet = function() return true/false end to say when a freeze costs nothing (FischHub: the
+  -- server-gated start of a reel); the sync waits for that, but never more than 45 s past due.
+  Fix.CloudForceAt = Fix.CloudForceAt or (os.clock() + 45)
+  if os.clock() < Fix.CloudForceAt then
+    for _, h in pairs(Fix.Helpers) do
+      if type(h.quiet) == "function" then
+        local okQ, good = pcall(h.quiet)
+        if okQ and good == false then return end
+      end
+    end
+  end
+  Fix.CloudForceAt = nil
   Fix.CloudBusy, Fix.CloudNext = true, os.clock() + 30
   task.spawn(function()
     local ok = pcall(function()
