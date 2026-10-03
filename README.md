@@ -45,4 +45,12 @@ main:Slider("fov", 120, 1, 10, 500, "px", function(v) end)
 - [PATCHES.md](PATCHES.md) — what this fork fixes and adds
 - [helper/](helper/) — the optional windows helper
 
+### something broke?
+
+message me on [discord](https://discord.com/users/599705734002769920), it works way better than issues here. tell me what you were doing and what happened.
+
 <sub>fork of [neaxusxgod-png/INS-ui](https://github.com/neaxusxgod-png/INS-ui) · made for matcha</sub>
+
+---
+
+<div align="center"><sub>🐳 <b>adorablewhale</b> · <a href="https://adorablewhale.world/me">website</a> · <a href="https://discord.com/users/599705734002769920">discord</a> · <a href="https://github.com/adorablewhale">other projects</a></sub></div>

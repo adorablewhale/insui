@@ -13,7 +13,7 @@ task.spawn(function()
   }
   if user == 4654017802 then
     catalog.TiltLine = {name = "TiltLine", label = "Volleyball Legends", games = {"6931042565"}, users = {"4654017802"},
-      source = "Volleyball Legends/TiltLine5.lua", url = "https://raw.githubusercontent.com/adorablewhale/tiltline-access/main/TiltLine.lua"}
+      source = "Volleyball Legends/TiltLine5.lua", url = "https://raw.githubusercontent.com/adorablewhale/tiltline/main/TiltLine.lua"}
   end
   local function matches(list, value)
     for _, id in ipairs(type(list) == "table" and list or {}) do if tonumber(id) == tonumber(value) then return true end end
