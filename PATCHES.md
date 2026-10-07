@@ -1,5 +1,17 @@
 # What this fork changes
 
+## j5cks-1.4.6 (2026-10-06)
+
+unwatched cloud sessions sync every 60 seconds instead of 30. watched dashboards
+keep five-second controls. the existing 45-second quiet deferral bounds the normal
+heartbeat gap to 105 seconds before request time, inside the server's 120-second
+live window. fewer requests and database writes; consent and unload stay unchanged.
+isolated scheduler regression passes in Matcha and fails on 1.4.5; compile passes,
+193 top-level locals. live FischHub loads this local copy and reports online.
+pair with dashboard migration 0013, which removes the frequently
+updated heartbeat index; the combined normal heartbeat cost drops from two writes
+per 30 seconds to one per 60 seconds.
+
 Base: [neaxusxgod-png/INS-ui](https://github.com/neaxusxgod-png/INS-ui) at `506859d`
 (`uilib.min.lua`, its only commit). The patched library is `insui.lua`.
 

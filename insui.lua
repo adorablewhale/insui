@@ -4580,7 +4580,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.5" }
+local InsUi = { _state = State, Version = "j5cks-1.4.6" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -7717,12 +7717,14 @@ function Fix.CloudStep()
     end
   end
   Fix.CloudForceAt = nil
-  Fix.CloudBusy, Fix.CloudNext = true, os.clock() + 30
+  -- Unwatched sessions need one beat per minute. With the bounded 45-second quiet
+  -- deferral this stays inside the server's 120-second liveness window.
+  Fix.CloudBusy, Fix.CloudNext = true, os.clock() + 60
   task.spawn(function()
     local ok = pcall(function()
       local ready, why = Fix.CloudReady()
       if not ready then Fix.CloudStatus = why or "offline" Fix.CloudNext = os.clock() + 60 return end
-      Fix.CloudStatus = ready.cloud and "online (30-second sync)" or "dashboard off"
+      Fix.CloudStatus = ready.cloud and "online (60-second sync)" or "dashboard off"
       local watched = false
       for _, h in pairs(Fix.Helpers) do
         if not State.Alive then break end
