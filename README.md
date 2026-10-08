@@ -22,7 +22,7 @@ local lib = _G.INSUI
 - **a hud** — floating boxes for live stats
 - **autoexec** — pick which scripts run in which games from the gear tab
 - **cloud dashboard** — check and change your script from your phone at adorablewhale.world; scripts can place it on their own online tab
-- **update notices** — it tells you when a newer version is out
+- **update notices** — waits until you open the menu; closed-menu macros stay undisturbed
 - **one clear agreement** — users see exactly what's shared before anything loads
 - **clean unload** — reinject as often as you like, nothing is left behind
 

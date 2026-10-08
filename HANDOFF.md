@@ -1,3 +1,11 @@
+# october 8: quiet update notifier (j5cks-2.0.1 local, unpublished)
+
+- owner: only alert about reinjection when the UI is open, to protect sleeping users' macros. background version polling now queues per-script offers without toast/dialog/input changes. `Fix.UpdateShow` delivers before the polling timer guard once the menu is open, expanded, focused and not editing/showing another popup. newest queued version replaces older pending version; seen only on presentation. no-url offers explain reinjection. only explicit reload executes downloaded code.
+- update dialogs carry `UpdateNotice`; closing via `Fix.SetOpen` immediately dismisses only that dialog. frame check also removes it if hidden/minimized. unrelated dialogs remain intact.
+- test_update_notice.py reproduces old closed-menu interruption and covers async download finishing after close, pending delivery before next poll, duplicate suppression, focus/editor/modal gates, latest version replacement, no-url notice and explicit reload. all 5 Python suites pass; compile and 193 locals pass.
+- copied to C:/matcha/workspace/INSUI/insui.lua; FischHub reinjections confirm local j5cks-2.0.1 loaded. live actual-source notifier fixture stays silent while closed, renders on open, disappears on close (full-desktop screenshot in Fisch/FischHub/update-notice-preview.png). full live network release flow not invoked. final menu closed/auto fish off.
+- public remains j5cks-2.0.0 (6793974). no commit/push/release; pre-existing loader.lua edits untouched. graph refresh explicitly deferred.
+
 # insui 2.0 remake - 2026-10-08 (local, unpublished)
 
 owner asked for the menu remade around fischhub's features in the website style (mockup: claude.ai/artifact/KnkS8d251WzRUmhxwenSy8, owner approved it). approach chosen by the owner: same library and API, new look. j5cks-2.0.0 is in insui.lua and C:/matcha/workspace/INSUI/insui.lua (local copy wins over github by version). details in PATCHES.md. backup of 1.4.9: git HEAD. NOT pushed: main is what every public FischHub/TiltLine user downloads, so publishing needs the owner's go. the owner's own config was reset to legacy once (backup INSUI/FischHub/fischhub.pre2.json) because an early test saved the old purple look under skin 2.

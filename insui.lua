@@ -1591,6 +1591,7 @@ end
 
 function Fix.SetOpen(open)
   open = open == true
+  if not open and State.Dialog and State.Dialog.UpdateNotice then State.Dialog = nil end
   if (not open or not State.Open) and not State.SpotlightOpen and not State.Dialog then Fix.ClearEditing() end
   State.Open = open
   if not open then
@@ -4588,7 +4589,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(0, 0, 0)
 
-local InsUi = { _state = State, Version = "j5cks-2.0.0" }
+local InsUi = { _state = State, Version = "j5cks-2.0.2" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -4770,6 +4771,14 @@ end
 
 function RowClass:DependsOn(parent)
   self.Parent = parent
+
+  return self
+end
+
+
+-- 2.0.2: a quick row is one people change from the website while they're away (shown on its home tab)
+function RowClass:SetQuick(on)
+  self.Quick = on ~= false
 
   return self
 end
@@ -7410,9 +7419,14 @@ function Fix.HelperMethods:Log(line)
 end
 function Fix.HelperMethods:Watch(armed, label) self.watch = {armed = armed == true, label = tostring(label or "running")} end
 function Fix.HelperMethods:NeedFocus(on, keys) self.afk = {needFocus = on == true, keys = "OI"} end
-function Fix.HelperMethods:Action(id, label, fn)
+-- options (2.0.2, optional): {hint = "one line for the website", risk = false} . without options an
+-- action asks for confirmation on the website, as before. actions keep the order they were added in.
+function Fix.HelperMethods:Action(id, label, fn, options)
   if type(id) == "string" and id:match("^[%w_-]+$") and type(fn) == "function" then
-    self.actions[id] = {id = id, label = tostring(label), fn = fn}
+    options = type(options) == "table" and options or {}
+    self.actionOrder = (self.actionOrder or 0) + 1
+    self.actions[id] = {id = id, label = tostring(label), fn = fn, order = self.actionOrder,
+      hint = type(options.hint) == "string" and options.hint:sub(1, 120) or nil, risk = options.risk ~= false}
     self.controlsStamp = nil
   end
   return self
@@ -7513,14 +7527,15 @@ function Fix.HelperRows(h)
         controls[#controls + 1] = {path = path, tab = tab.Name, section = section.Name, name = row.Name,
           kind = kind:lower(), value = row.Value, min = row.Min, max = row.Max, step = row.Step,
           suffix = row.Suffix, choices = row.Choices, multi = row.Multi, disabled = row.Hidden == true or row.Locked == true or RowLocked(row), risk = row.Risk == true,
+          desc = type(row.Tip) == "string" and row.Tip:sub(1, 160) or nil, quick = row.Quick == true or nil,
           library = tab.Hidden == true}   -- INSUI's own gear tab (theme, configs, auto-execute): never sent to the cloud
       end
     end
   end)
   h.byPath = byPath
   local actions = {}
-  for _, a in pairs(h.actions) do actions[#actions + 1] = {id = a.id, label = a.label} end
-  table.sort(actions, function(a, b) return a.id < b.id end)
+  for _, a in pairs(h.actions) do actions[#actions + 1] = {id = a.id, label = a.label, hint = a.hint, risk = a.risk, order = a.order or 0} end
+  table.sort(actions, function(a, b) if a.order ~= b.order then return a.order < b.order end return a.id < b.id end)
   return {controls = controls, actions = actions}, rows
 end
 function Fix.HelperValidate(row, value)
@@ -7758,9 +7773,9 @@ function Fix.CloudSync(h, unloaded)
       if live and not live.CloudPrivate then controls.controls[#controls.controls + 1] = row end
     end
   end
-  for _, action in ipairs(ctl.actions) do controls.actions[#controls.actions + 1] = {id = action.id, label = action.label, risk = true} end
+  for _, action in ipairs(ctl.actions) do controls.actions[#controls.actions + 1] = {id = action.id, label = action.label, hint = action.hint, risk = action.risk ~= false} end
   local state = {status = h.state.status or {lines = {}}, stats = h.state.stats or {}, rows = rows,
-    cards = h.state.cards, helper = h:Up() == true}   -- cards: the script's summary panels (see Fix.HelperMethods:Notify)
+    cards = h.state.cards, helper = h:Up() == true, headline = h.state.headline}   -- cards: the script's summary panels (see Fix.HelperMethods:Notify)
   if h.cloudStatus then state.status = {lines = h.cloudStatus} end
   local result, why = Fix.CloudCall("/api/v1/sync", {termsVersion = Fix.AccessVersion, name = h.name, version = h.version,
     runId = h.cloudRun, place = string.format("%.0f", game.PlaceId), game = string.format("%.0f", game.GameId),
@@ -7859,9 +7874,9 @@ function InsUi:FlushCloud()
 end
 -- Update notices: adorablewhale.world/versions.json (no-store, so no GitHub raw-cache lag) lists
 -- the latest published INSUI and script versions. A minute after load and then every 15 minutes,
--- anything older than that gets one notice and a "reload now" offer (the script's registered
--- autoexec URL). Nothing is sent: it is a plain download of a public file.
-Fix.UpdateNext, Fix.UpdateSeen = os.clock() + 60, {}
+-- newer versions are queued silently until the user opens the menu. Nothing is sent:
+-- it is a plain download of a public file; reloading always needs an explicit click.
+Fix.UpdateNext, Fix.UpdateSeen, Fix.UpdatePending = os.clock() + 60, {}, {}
 function Fix.VersionNewer(latest, current)
   local function parts(v) local t = {} for n in tostring(v):gmatch("%d+") do t[#t + 1] = tonumber(n) end return t end
   local a, b = parts(latest), parts(current)
@@ -7873,18 +7888,37 @@ end
 function Fix.UpdateOffer(name, latest, current, url)
   local key = name .. "@" .. tostring(latest)
   if Fix.UpdateSeen[key] then return end
-  Fix.UpdateSeen[key] = true
-  local low = string.lower(name)
-  InsUi:Notify("Update available", low .. " " .. tostring(latest) .. " is out (you have " .. tostring(current) .. "). Reinject to update.", 12, "info")
-  if not url or State.Dialog then return end
-  InsUi:Dialog({title = "Update " .. low .. "?", text = low .. " " .. tostring(latest) .. " is out; you are running " .. tostring(current) .. ". Reload now to get it. Your settings are kept.",
-    confirm = "Reload now", cancel = "Later", onConfirm = function() task.spawn(function()
-      local ok, src = pcall(function() return game:HttpGet(url) end)
-      local fn = ok and type(src) == "string" and loadstring(src)
-      if fn then pcall(fn) else InsUi:Notify("Update", "Could not download the update; reinject later.", 6, "error") end
-    end) end})
+  Fix.UpdatePending[name] = { key = key, latest = latest, current = current, url = url }
+end
+function Fix.UpdateShow()
+  if not State.Open or State.Rolled then
+    if State.Dialog and State.Dialog.UpdateNotice then State.Dialog = nil end
+    return
+  end
+  if State.RobloxFocused == false or State.Dialog or State.Focus or State.Capture
+    or State.SpotlightOpen or State.Dropdown or State.Picker or State.Menu then return end
+  local name, offer = next(Fix.UpdatePending)
+  if not name then return end
+  Fix.UpdatePending[name] = nil
+  if Fix.UpdateSeen[offer.key] then return end
+  Fix.UpdateSeen[offer.key] = true
+  local low, url = string.lower(name), offer.url
+  local text = low .. " " .. tostring(offer.latest) .. " is out; you are running " .. tostring(offer.current) .. ". "
+  InsUi:Dialog({title = "update " .. low .. "?",
+    text = text .. (url and "reload now to get it. your settings are kept." or "reinject to update. your settings are kept."),
+    confirm = url and "reload now" or "ok", cancel = "later", onConfirm = function()
+      if not url then return end
+      task.spawn(function()
+        local ok, src = pcall(function() return game:HttpGet(url) end)
+        local fn = ok and type(src) == "string" and loadstring(src)
+        if fn then pcall(fn)
+        elseif State.Open then InsUi:Notify("update", "could not download the update; reinject later.", 6, "error") end
+      end)
+    end})
+  if State.Dialog then State.Dialog.UpdateNotice = true end
 end
 function Fix.UpdateStep()
+  Fix.UpdateShow()
   if Fix.UpdateBusy or os.clock() < Fix.UpdateNext then return end
   Fix.UpdateBusy, Fix.UpdateNext = true, os.clock() + 900
   task.spawn(function()

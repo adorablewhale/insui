@@ -1,4 +1,13 @@
+# october 8: quiet update notifier (j5cks-2.0.1 local, unpublished)
+
+- owner: only alert about reinjection when the UI is open, to protect sleeping users' macros. background version polling now queues per-script offers without toast/dialog/input changes. `Fix.UpdateShow` delivers before the polling timer guard once the menu is open, expanded, focused and not editing/showing another popup. newest queued version replaces older pending version; seen only on presentation. no-url offers explain reinjection. only explicit reload executes downloaded code.
+- update dialogs carry `UpdateNotice`; closing via `Fix.SetOpen` immediately dismisses only that dialog. frame check also removes it if hidden/minimized. unrelated dialogs remain intact.
 # What this fork changes
+
+## j5cks-2.0.2 (2026-10-08)
+
+- dashboard: actions take optional `{hint, risk}` (`h:Action(id, label, fn, options)`) and keep the order they were added; rows send their tooltip as `desc` and `RowClass:SetQuick()` / `row.Quick` marks the few settings shown on the website home tab; `h.state.headline = {level, title, detail}` is synced as the one status line. older scripts keep working unchanged (actions without options still ask for confirmation).
+- includes 2.0.1: update notices wait until the menu is open, focused and idle; closing the menu dismisses its own update dialog; reloading still needs a click.
 
 ## j5cks-2.0.0 local candidate (2026-10-08)
 
