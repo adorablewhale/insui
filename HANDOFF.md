@@ -1,3 +1,7 @@
+# insui 2.0 remake - 2026-10-08 (local, unpublished)
+
+owner asked for the menu remade around fischhub's features in the website style (mockup: claude.ai/artifact/KnkS8d251WzRUmhxwenSy8, owner approved it). approach chosen by the owner: same library and API, new look. j5cks-2.0.0 is in insui.lua and C:/matcha/workspace/INSUI/insui.lua (local copy wins over github by version). details in PATCHES.md. backup of 1.4.9: git HEAD. NOT pushed: main is what every public FischHub/TiltLine user downloads, so publishing needs the owner's go. the owner's own config was reset to legacy once (backup INSUI/FischHub/fischhub.pre2.json) because an early test saved the old purple look under skin 2.
+
 # menu focus and mouse hotfix - 2026-10-07
 
 INSUI j5cks-1.4.9 supersedes the 1.4.8 keyboard fix below. Matcha's setrobloxinput(false) on menu hover caused in-game focus/AFK loss and the library then discarded its own clicks. Matcha now keeps Roblox input enabled, while real foreground guards remain in place. other executors retain the existing capture policy. IsInteracting() lets Fisch pause simulated casting/shaking and both reel buttons while the cursor/editor/popup is using the menu; real foreground focus stays intact. an open menu viewed from outside its window does not count as interaction (existing mouse-cast open-menu guard remains). synthetic releases use a polled grace deadline plus physical-up sample; Fisch reports release immediately rather than relying on task.delay. no input is sent to unfocused applications.

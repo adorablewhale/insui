@@ -43,8 +43,9 @@ local LibName = "INSui"
 
 local White = Color3.fromRGB(255, 255, 255)
 local Black = Color3.fromRGB(0, 0, 0)
-local AccentA = Color3.fromRGB(122, 134, 255)
-local AccentB = Color3.fromRGB(189, 130, 255)
+-- 2.0: the default look is the website's, monochrome ink on black. Presets still recolour it.
+local AccentA = Color3.fromRGB(232, 232, 232)
+local AccentB = Color3.fromRGB(232, 232, 232)
 local Newline = string.char(10)
 -- helpers added by the fork live on one table, so they cost one top-level local
 local Fix = {}
@@ -95,40 +96,47 @@ end
 
 
 local Theme = {
-  IconIdle = Color3.fromRGB(188, 191, 199),
-  Background = Color3.fromRGB(15, 15, 15),
-  Text = White,
-  Idle = Color3.fromRGB(150, 153, 161),
-  Category = Color3.fromRGB(120, 122, 132),
+  IconIdle = Color3.fromRGB(138, 138, 138),
+  Background = Color3.fromRGB(0, 0, 0),
+  Text = Color3.fromRGB(232, 232, 232),
+  Idle = Color3.fromRGB(138, 138, 138),
+  Category = Color3.fromRGB(90, 90, 90),
   AccentA = AccentA,
   AccentB = AccentB,
   Accent = Blend(AccentA, AccentB, 0.5),
-  Track = Color3.fromRGB(61, 61, 61),
-  Risk = Color3.fromRGB(255, 190, 70),
-  SliderTrack = Color3.fromRGB(87, 86, 86),
-  Swatch = Color3.fromRGB(40, 40, 40),
+  Track = Color3.fromRGB(46, 46, 46),
+  Risk = Color3.fromRGB(255, 107, 107),
+  SliderTrack = Color3.fromRGB(46, 46, 46),
+  Swatch = Color3.fromRGB(20, 20, 20),
+  -- website tokens (2.0)
+  Raise = Color3.fromRGB(11, 11, 11),
+  Hover = Color3.fromRGB(20, 20, 20),
+  Rule = Color3.fromRGB(31, 31, 31),
+  Rule2 = Color3.fromRGB(46, 46, 46),
+  Dim = Color3.fromRGB(138, 138, 138),
+  Mute = Color3.fromRGB(90, 90, 90),
 }
 
 local Layout = {
-  WindowSize = Vector2.new(560, 460),
-  Corner = 8,
+  WindowSize = Vector2.new(720, 520),
+  Corner = 6,
   MinWidth = 420,
   MinHeight = 300,
 
-  TopbarHeight = 42,
+  TopbarHeight = 44,
   RailNarrow = 54,
   TitleHeight = 31,
   TopPill = 26,
   GemSize = 16,
-  RailShare = 0.23,
-  RailWide = 126,
+  RailShare = 0.22,
+  RailWide = 168,
 
-  PillHeight = 30,
-  PillRadius = 7,
-  PillIndent = 12,
+  PillHeight = 32,
+  PillRadius = 0,
+  PillIndent = 0,
   PillIcon = 34,
-  SubHeight = 24,
-  SubRadius = 6,
+  SubHeight = 28,
+  SubRadius = 0,
   SubIcon = 14,
   SubIndent = 14,
   SubStagger = 0.10,
@@ -138,52 +146,53 @@ local Layout = {
   IconSize = 16,
 
   RowHeight = 26,
-  RowGap = 6,
-  CardRadius = 5,
-  CardLeft = 20,
-  CardInset = 38,
-  CardTopPad = 11,
-  CardBottomPad = 8,
-  ColumnGap = 10,
-  ContentPad = 12,
-  ContentTop = 10,
-  ContentBottom = 10,
+  RowGap = 0,
+  CardRadius = 2,
+  CardLeft = 0,
+  CardInset = 0,
+  CardTopPad = 4,
+  CardBottomPad = 2,
+  ColumnGap = 22,
+  ContentPad = 20,
+  ContentTop = 14,
+  ContentBottom = 12,
   ScrollGutter = 6,
-  SectionTitle = 17,
-  SectionDesc = 13,
+  SectionTitle = 20,
+  SectionDesc = 15,
 
-  ToggleRow = 30,
-  ButtonRow = 26,
-  SliderRow = 38,
-  DropdownRow = 44,
-  DropdownInlineRow = 26,
-  TextboxRow = 44,
-  ColorRow = 26,
-  KeybindRow = 30,
-  DividerRow = 18,
+  ToggleRow = 36,
+  ButtonRow = 38,
+  SliderRow = 46,
+  DropdownRow = 64,
+  DropdownInlineRow = 40,
+  TextboxRow = 64,
+  ColorRow = 36,
+  KeybindRow = 36,
+  DividerRow = 24,
 
-  SwitchWidth = 38,
-  SwitchHeight = 20,
-  SwitchKnob = 14,
-  ButtonHeight = 22,
+  SwitchWidth = 30,
+  SwitchHeight = 16,
+  SwitchKnob = 10,
+  ButtonHeight = 26,
   ValueHeight = 18,
-  BarHeight = 8,
+  BarHeight = 1,
   KnobRadius = 6,
   KnobHover = 9,
 
   MonoSize = 26,
   MonoRadius = 7,
   HeaderTitle = 16,
-  SearchWidth = 190,
+  SearchWidth = 210,
   SearchMin = 100,
   SearchShare = 0.28,
-  SearchHeight = 18,
-  ButtonBox = 20,
-  UserCard = 46,
+  SearchHeight = 26,
+  ButtonBox = 28,
+  UserCard = 44,
+  FooterHeight = 26,
   AvatarRadius = 14,
 
   SwatchSize = 16,
-  CheckboxSize = 18,
+  CheckboxSize = 16,
   CheckMax = 15.2,
   CheckHaloMax = 15.4,
   CheckRingMax = 17,
@@ -193,11 +202,11 @@ local Layout = {
   RowSwatchRadius = 5,
   RowChipMin = 28,
   RowChipPad = 14,
-  RowChipRadius = 5,
-  ChipHeight = 20,
-  FieldGap = 20,
-  FieldHeight = 24,
-  FieldRadius = 4,
+  RowChipRadius = 3,
+  ChipHeight = 22,
+  FieldGap = 22,
+  FieldHeight = 28,
+  FieldRadius = 3,
   FieldPad = 10,
   FieldInset = 18,
   LabelHeight = 16,
@@ -205,7 +214,7 @@ local Layout = {
   ColorLabel = 24,
   PickerOffsetX = 12,
   PickerOffsetY = 80,
-  ChipRadius = 4,
+  ChipRadius = 3,
   ChipNudge = 0.37,
   ChipMin = 40,
   ChipPad = 16,
@@ -237,23 +246,23 @@ local Layout = {
   MenuPad = 8,
   MenuMargin = 8,
   MenuRise = 6,
-  MenuRadius = 8,
+  MenuRadius = 4,
   MenuInset = 4,
   MenuTrim = 2,
-  MenuItemRadius = 6,
+  MenuItemRadius = 2,
   MenuTextPad = 12,
   MenuTextRoom = 20,
   MenuEdge = 4,
   MenuSpeed = 22,
   NoteMax = 10,
-  NoteWidth = 292,
+  NoteWidth = 300,
   NoteMargin = 16,
   NoteGap = 8,
   NoteLines = 4,
   NoteLine = 15,
   NoteTopPad = 24,
   NoteBottomPad = 14,
-  NoteRadius = 12,
+  NoteRadius = 4,
   NoteSlide = 12,
   NoteFadeIn = 0.25,
   NoteFadeOut = 0.35,
@@ -269,8 +278,8 @@ local Layout = {
   NoteBodyRoom = 40,
   NoteTrackRoom = 45,
   NoteTrackLift = 9,
-  NoteBarHeight = 2,
-  NoteBarRadius = 1,
+  NoteBarHeight = 1,
+  NoteBarRadius = 0,
   GradientSteps = 24,
   FullFrame = 1 / 144,
   LiteFrame = 1 / 60,
@@ -288,7 +297,7 @@ local Layout = {
   TipBottom = 4,
   TipInset = 8,
   TipTextTop = 4,
-  TipRadius = 6,
+  TipRadius = 3,
   DialogSpeed = 18,
   DialogHide = 0.01,
   DialogLive = 0.5,
@@ -299,16 +308,16 @@ local Layout = {
   DialogLift = 12,
   DialogShadowX = 3,
   DialogShadowY = 6,
-  DialogRadius = 12,
+  DialogRadius = 6,
   DialogHaloOut = 1,
-  DialogHaloRadius = 13,
+  DialogHaloRadius = 7,
   DialogTitle = 16,
   DialogTitleTop = 18,
   DialogTextTop = 48,
   DialogButton = 30,
   DialogGap = 10,
   DialogButtonPad = 16,
-  DialogButtonRadius = 6,
+  DialogButtonRadius = 2,
   ListRow = 26,
   ListVisible = 8,
   ListHeader = 30,
@@ -327,22 +336,22 @@ local Layout = {
   ListLift = 6,
   ListReach = 4,
   ListShadow = 3,
-  ListShadowRadius = 11,
-  ListRadius = 8,
+  ListShadowRadius = 6,
+  ListRadius = 4,
   ListOpenSpeed = 9,
   ListGoneAt = 0.02,
   ListScrollSpeed = 16,
   ListBarRoom = 18,
   ListRowRoom = 8,
   ListRowGap = 2,
-  ListRowRadius = 6,
+  ListRowRadius = 2,
   ListEdgeSlack = 2,
   ListTextInset = 12,
   ListTextRoom = 42,
   ListSearchInset = 6,
   ListSearchTop = 5,
   ListSearchBox = 22,
-  ListSearchRadius = 6,
+  ListSearchRadius = 3,
   ListSearchText = 14,
   ListSearchRoom = 28,
   ListSearchField = 30,
@@ -381,12 +390,12 @@ local Layout = {
   ThumbMix = 0.75,
   ContextWidth = 110,
   ContextHeight = 52,
-  ContextRadius = 6,
+  ContextRadius = 4,
   ContextPad = 4,
   ContextStep = 24,
   ContextInset = 3,
   ContextRow = 22,
-  ContextRowRadius = 5,
+  ContextRowRadius = 2,
   ContextText = 10,
   ContextTextRoom = 16,
   ContextReach = 4,
@@ -402,8 +411,8 @@ local Layout = {
   PickerLift = -6,
   PickerSpeed = 22,
   PickerGlow = 3,
-  PickerGlowRadius = 12,
-  PickerRadius = 9,
+  PickerGlowRadius = 7,
+  PickerRadius = 6,
   PickerBoxRadius = 4,
   PickerSegMin = 40,
   PickerSegMax = 170,
@@ -458,13 +467,13 @@ local Layout = {
   BoxTextRoom = 24,
   BoxPad = 8,
   BoxEmptyPad = 4,
-  BoxRadius = 8,
+  BoxRadius = 4,
   BoxDotX = 15,
   BoxDot = 2.5,
   BoxDotSides = 10,
   BoxRuleInset = 10,
   BoxRuleLift = 1,
-  BoxRuleHeight = 1.5,
+  BoxRuleHeight = 1,
   BoxLineTop = 5,
   BoxStatDotX = 16,
   BoxStatDotY = 7,
@@ -476,8 +485,8 @@ local Layout = {
   BoxValuePad = 12,
   BoxInset = 14,
   BoxBarTop = 5,
-  BoxBarHeight = 6,
-  BoxBarRadius = 3,
+  BoxBarHeight = 2,
+  BoxBarRadius = 0,
   BoxBarMin = 6,
   BoxFull = 100,
   BoxDragSpeed = 28,
@@ -487,7 +496,7 @@ local Layout = {
   HotkeyPad = 6,
   HotkeyX = 18,
   HotkeyY = 90,
-  HotkeyRadius = 8,
+  HotkeyRadius = 4,
   HotkeySpeed = 16,
   HotkeyFadeSpeed = 14,
   HotkeyDragSpeed = 28,
@@ -499,7 +508,7 @@ local Layout = {
   HotkeyRuleX = 10,
   HotkeyRuleY = 26,
   HotkeyRuleRoom = 20,
-  HotkeyRuleHeight = 2,
+  HotkeyRuleHeight = 1,
   HotkeySlide = 12,
   HotkeyDot = 2.5,
   HotkeyDotX = 14,
@@ -511,7 +520,7 @@ local Layout = {
   HotkeyChipRight = 10,
   HotkeyChipInset = 2,
   HotkeyChipTrim = 4,
-  HotkeyChipRadius = 4,
+  HotkeyChipRadius = 3,
   BubbleSize = 42,
   BubbleX = 24,
   BubbleY = 24,
@@ -544,7 +553,7 @@ local Layout = {
   SpotPad = 8,
   SpotEmpty = 30,
   SpotTop = 0.16,
-  SpotRadius = 12,
+  SpotRadius = 6,
   SpotGlassX = 24,
   SpotGlassY = 21,
   SpotGlass = 6,
@@ -556,7 +565,7 @@ local Layout = {
   SpotHandleTipY = 30,
   SpotRuleX = 14,
   SpotRuleY = 46,
-  SpotRuleHeight = 2,
+  SpotRuleHeight = 1,
   SpotField = 46,
   SpotText = 15,
   SpotQueryX = 44,
@@ -573,7 +582,7 @@ local Layout = {
   SpotRowWide = 16,
   SpotRowLift = 1,
   SpotRowTrim = 2,
-  SpotRowRadius = 8,
+  SpotRowRadius = 2,
   SpotMark = 3,
   SpotMarkRadius = 1.5,
   SpotNameX = 18,
@@ -605,33 +614,33 @@ local Layout = {
 }
 
 local Alpha = {
-  Hairline = 0.10,
-  CardStroke = 0.06,
+  Hairline = 0.16,
+  CardStroke = 0.10,
   Card = 0.03,
-  Text = 0.80,
-  Label = 0.50,
-  Dim = 0.40,
-  Hover = 0.70,
-  Field = 0.05,
+  Text = 0.96,
+  Label = 0.94,
+  Dim = 0.58,
+  Hover = 1,
+  Field = 0.035,
   SwatchEdge = 0.40,
   FieldFocus = 0.45,
   FieldHover = 0.20,
-  Placeholder = 0.30,
+  Placeholder = 0.38,
   Select = 0.45,
-  Body = 0.70,
-  Divider = 0.45,
-  DividerPlain = 0.40,
-  Menu = 0.97,
+  Body = 0.80,
+  Divider = 0.30,
+  DividerPlain = 0.30,
+  Menu = 1,
   MenuSelect = 0.06,
   MenuHover = 0.04,
   NoteShadow = 0.16,
-  NoteFill = 0.97,
+  NoteFill = 1,
   NoteTrack = 0.12,
   NoteBar = 0.95,
-  TipFill = 0.96,
+  TipFill = 1,
   DialogVeil = 0.5,
   DialogShadow = 0.3,
-  DialogFill = 0.99,
+  DialogFill = 1,
   DialogHalo = 0.10,
   DialogEdge = 0.22,
   DialogHover = 0.4,
@@ -643,7 +652,7 @@ local Alpha = {
   DropdownHover = 0.03,
   ArrowLift = 0.35,
   ListShadow = 0.28,
-  Panel = 0.98,
+  Panel = 1,
   ListSearchFocus = 0.40,
   Press = 0.45,
   RowSelect = 0.05,
@@ -655,7 +664,7 @@ local Alpha = {
   ThumbGlow = 0.45,
   ContextHover = 0.05,
   PickerShadow = 0.30,
-  PickerPanel = 0.98,
+  PickerPanel = 1,
   PickerShade = 0.92,
   PickerEdge = 0.25,
   PickerHandle = 0.45,
@@ -663,14 +672,14 @@ local Alpha = {
   PickerFormat = 0.09,
   PickerEditing = 0.10,
   PickerHover = 0.06,
-  BoxFill = 0.92,
+  BoxFill = 0.9,
   BoxRule = 0.7,
   BoxPulse = 0.5,
   BoxPulseGain = 0.42,
   BoxIdleDot = 0.7,
   BoxLiveDot = 0.85,
   BoxBarFill = 0.95,
-  HotkeyFill = 0.92,
+  HotkeyFill = 0.9,
   HotkeyRule = 0.90,
   BubbleShadow = 0.10,
   BubbleShadowFall = 0.025,
@@ -682,7 +691,7 @@ local Alpha = {
   BubbleEdgeGrow = 0.14,
   BubbleEdgeHover = 0.35,
   SpotVeil = 0.4,
-  SpotFill = 0.97,
+  SpotFill = 1,
   SpotRule = 0.7,
   SpotSelect = 0.1,
   SpotMark = 0.9,
@@ -1418,7 +1427,7 @@ local State = {
 
   Drag = nil,
   Sliding = nil,
-  RailOpen = 0,
+  RailOpen = 1,
   SearchGlow = 0,
   Buttons = {},
   Rolled = false,
@@ -1451,7 +1460,7 @@ local State = {
   RainbowSpeed = 0.3,
   Glow = 1,
   HoverEffects = true,
-  RailPinned = false,
+  RailPinned = true,
   DropdownInline = false,
   SearchStyle = "bar",
   NoAnim = false,
@@ -1462,7 +1471,8 @@ local State = {
   Shipped = nil,
   Loading = false,
   Lite = false,
-  RowLines = false,
+  RowLines = true,
+  ShowDescs = true,
   Opacity = 0.98,
   AutoSave = false,
   GameInput = true,
@@ -1932,14 +1942,8 @@ do
 
 
   function DrawFrame(rail)
-    local Shadow = Alpha.WindowShadow
-
     if not State.Lite then
-      for Index = 1, #Shadow do
-        local Spread = Index * 4
-
-        DrawRect(State.X - Spread, State.Y - Spread + 6, State.W + Spread * 2, State.H + Spread * 2, Black, 9, 16, Shadow[Index])
-      end
+      DrawRect(State.X - 4, State.Y + 2, State.W + 8, State.H + 10, Black, 9, 10, 0.22)
     end
 
     DrawRect(State.X, State.Y, State.W, State.H, Theme.Background, 10, Layout.Corner, State.Opacity)
@@ -1954,28 +1958,39 @@ do
       DrawPicture(Backdrop, State.X + (State.W - Wide) / 2, State.Y + Layout.TopbarHeight + (PaneHeight - Tall) / 2, Wide, Tall, 119999, State.BackdropAlpha * State.Visible)
     end
 
-    DrawStroke(State.X, State.Y, State.W, State.H, Theme.Text, 12, Layout.Corner, Alpha.Hairline)
+    DrawStroke(State.X, State.Y, State.W, State.H, Theme.Rule2, 12, Layout.Corner, 1)
 
     if State.TabLayout == "top" then
-      DrawRect(State.X + 1, State.Y + Layout.TitleHeight, State.W - 2, 4, Theme.Accent, 11, 0, 0.035)
-      GradientRect(State.X + 1, State.Y + Layout.TitleHeight - 1.4, State.W - 2, 1.4, Theme.AccentA, Theme.AccentB, 12, 0.55)
+      DrawLine(State.X + 1, State.Y + Layout.TitleHeight, State.X + State.W - 1, State.Y + Layout.TitleHeight, Theme.Rule, 12, 1, 1)
     else
-      local Tab = ActiveView()
+      local Top = State.Y + Layout.TopbarHeight
 
-      DrawRect(State.X + rail, State.Y + Layout.TopbarHeight, State.W - rail, State.H - Layout.TopbarHeight, Theme.Text, 11, 7, 0.045)
-
-      if Tab then DrawText(Tab.Name, State.X + rail + 16, TextTop(State.Y, Layout.TopbarHeight, Layout.TitleSize), Theme.Text, Layout.TitleSize, BoldFont, 13, Alpha.Text, State.W - rail - 272) end
+      DrawLine(State.X + 1, Top, State.X + State.W - 1, Top, Theme.Rule, 12, 1, 1)
+      DrawLine(State.X + rail, Top, State.X + rail, State.Y + State.H - Layout.FooterHeight, Theme.Rule, 12, 1, 1)
     end
 
-    local Sweep = State.X - 46 + (State.W + 92) * State.Visible
-    local Shade = 4 * State.Visible * (1 - State.Visible)
-    local GlowLeft = math.max(State.X + 2, Sweep)
-    local GlowRight = math.min(State.X + State.W - 2, Sweep + 30)
-    local TrailLeft = math.max(State.X + 2, Sweep - 18)
-    local TrailRight = math.min(State.X + State.W - 2, Sweep)
+    Fix.DrawFooter()
+  end
 
-    DrawRect(GlowLeft, State.Y + 2, GlowRight - GlowLeft, Layout.TopbarHeight - 3, Theme.Text, 12, 6, 0.09 * Shade)
-    DrawRect(TrailLeft, State.Y + 2, TrailRight - TrailLeft, Layout.TopbarHeight - 3, Theme.Accent, 12, 6, 0.06 * Shade)
+
+  -- 2.0: one line at the bottom: the script's own text (SetFooter) and the menu key.
+  function Fix.DrawFooter()
+    local Height = Layout.FooterHeight
+    local Y = State.Y + State.H - Height
+    local Top = TextTop(Y, Height, Layout.TinySize)
+    local Hint = string.lower(tostring(State.MenuKey or "")) .. " hide"
+    local HintWidth = TextWidth(Hint, Layout.TinySize, MonoFont)
+    local Text = State.Footer
+
+    DrawLine(State.X + 1, Y, State.X + State.W - 1, Y, Theme.Rule, 12, 1, 1)
+    DrawText(Hint, State.X + State.W - 24 - HintWidth, Top, Theme.Mute, Layout.TinySize, MonoFont, 13, 1)
+
+    if type(Text) == "function" then
+      local Ok, Value = pcall(Text)
+      Text = Ok and Value or nil
+    end
+
+    if Text and Text ~= "" then DrawText(tostring(Text), State.X + 16, Top, Theme.Mute, Layout.TinySize, MonoFont, 13, 1, State.W - HintWidth - 64) end
   end
 
 
@@ -1984,25 +1999,18 @@ do
     local Size = Layout.ButtonBox
     local Bx, By = Gx - Size / 2, Gy - Size / 2
     local Hovered = IsMouseIn(Bx, By, Size, Size)
-    local Glow = State.Buttons[kind] or 0
+    local Tint = Hovered and Theme.Text or Theme.Dim
 
-    Glow = Approach(Glow, Hovered and 1 or 0, 14)
-    State.Buttons[kind] = Glow
-
-    local Tint = Blend(Theme.Text, Theme.Accent, Glow)
-    local Shade = 0.5 + 0.45 * Glow
-
-    DrawRect(Bx, By, Size, Size, Theme.Accent, 13, 6, 0.14 * Glow)
-    DrawStroke(Bx, By, Size, Size, Theme.Accent, 14, 6, 0.55 * Glow)
+    if Hovered then DrawRect(Bx, By, Size, Size, Theme.Hover, 13, 4, 1) end
 
     if kind == "Close" then
-      DrawBar(Gx - 4, Gy - 4, Gx + 4, Gy + 4, 1.8, Tint, 16, Shade)
-      DrawBar(Gx + 4, Gy - 4, Gx - 4, Gy + 4, 1.8, Tint, 16, Shade)
+      DrawBar(Gx - 4, Gy - 4, Gx + 4, Gy + 4, 1.5, Tint, 16, 1)
+      DrawBar(Gx + 4, Gy - 4, Gx - 4, Gy + 4, 1.5, Tint, 16, 1)
     elseif kind == "Search" then
-      DrawCircle(Gx - 1, Gy - 1, 3.2, Tint, 16, false, 1.5, 18, Shade)
-      DrawBar(Gx + 1.3, Gy + 1.3, Gx + 4.2, Gy + 4.2, 1.7, Tint, 16, Shade)
+      DrawCircle(Gx - 1, Gy - 1, 3.6, Tint, 16, false, 1.4, 18, 1)
+      DrawBar(Gx + 1.6, Gy + 1.6, Gx + 4.6, Gy + 4.6, 1.5, Tint, 16, 1)
     else
-      DrawBar(Gx - 4, Gy, Gx + 4, Gy, 1.8, Tint, 15, Shade)
+      DrawBar(Gx - 4, Gy, Gx + 4, Gy, 1.5, Tint, 15, 1)
     end
 
     return Hovered
@@ -2015,7 +2023,7 @@ do
     if Style == "off" then return end
 
     if Style == "icon" then
-      if not ControlButton(State.X + State.W - 71, "Search") then return end
+      if not ControlButton(State.X + State.W - 78, "Search") then return end
 
       WantTooltip(SearchHint, Input.X, Input.Y)
 
@@ -2024,75 +2032,65 @@ do
       return
     end
 
-    local Width = math.floor(math.min(Layout.SearchWidth, math.max(Layout.SearchMin, (State.TabLayout == "top" and State.W or (State.W - rail)) * Layout.SearchShare)))
-    local Bx = State.X + State.W - 66 - Width
-    local By = TitleMid() - 9
-    local Hovered = IsMouseIn(Bx, By, Width, Layout.SearchHeight)
-    local Glow = Settle(State.SearchGlow, Hovered and 1 or 0, 12, Layout.NavRest)
-    local Bright = (0.7 + 0.3 * Glow)
+    local Width = math.floor(math.min(Layout.SearchWidth, math.max(Layout.SearchMin, State.W * Layout.SearchShare)))
+    local Height = Layout.SearchHeight
+    local Bx = State.X + State.W - 80 - Width
+    local By = math.floor(TitleMid() - Height / 2)
+    local Hovered = IsMouseIn(Bx, By, Width, Height)
+    local Tint = Hovered and Theme.Dim or Theme.Mute
 
-    State.SearchGlow = Glow
+    State.SearchLeft = Bx
 
-    DrawRect(Bx, By, Width, Layout.SearchHeight, Theme.Text, 13, 9, Alpha.Field + 0.04 * Glow)
-    DrawStroke(Bx, By, Width, Layout.SearchHeight, Theme.Accent, 14, 9, 0.12 + 0.4 * Glow)
-    DrawCircle(Bx + 10, By + 8, 3, Theme.Accent, 15, false, 1.3, 18, Bright)
-    DrawBar(Bx + 11.8, By + 10.2, Bx + 14.4, By + 12.8, 1.4, Theme.Accent, 15, Bright)
-    DrawText("Search", Bx + 20, TextTop(By, Layout.SearchHeight, Layout.SmallSize), Theme.Text, Layout.SmallSize, SystemFont, 15, Alpha.Dim + 0.12 * Glow, Width - 26)
+    DrawRect(Bx, By, Width, Height, Theme.Background, 13, 4, 1)
+    DrawStroke(Bx, By, Width, Height, Hovered and Theme.Mute or Theme.Rule, 14, 4, 1)
+    DrawCircle(Bx + 12, By + Height / 2 - 1, 3.4, Tint, 15, false, 1.3, 18, 1)
+    DrawBar(Bx + 14.4, By + Height / 2 + 1.4, Bx + 17, By + Height / 2 + 4, 1.4, Tint, 15, 1)
+    DrawText("search every setting", Bx + 24, TextTop(By, Height, Layout.SmallSize), Tint, Layout.SmallSize, SystemFont, 15, 1, Width - 30)
 
     if not Hovered then return end
-
-    WantTooltip(SpotHint, Input.X, Input.Y)
 
     if Input.Click then ShowSpotlight(true) Input.Click = false end
   end
 
 
+  -- 2.0: the brand lives in the top bar: logo, title, version, then the script's live status.
   function DrawBrand(rail)
-    local Edge = State.X + rail - 14
-    local HeadX = State.X + 16
+    local HeadX = State.X + 18
     local Logo = State.Logo
-    local Size = Layout.MonoSize
-    local Middle = State.Y + 22 + ((State.Subtitle ~= "" and 30 or 18) - 22) * State.RailOpen
+    local Mid = TitleMid()
 
-    if Logo and DrawPicture(Logo, HeadX - 4 * (1 - State.RailOpen), Middle - State.LogoSize / 2, State.LogoSize, State.LogoSize, 629999, 1, State.LogoSize * 0.22) then
+    if Logo and DrawPicture(Logo, HeadX, Mid - 10, 20, 20, 629999, 1, 4) then
       HidePicture(State.Icon)
 
-      HeadX = HeadX + State.LogoSize + 9
-    elseif State.Icon then
-      HeadX = State.X + 44
-    else
-      local Letter = string.upper(string.sub(State.Title, 1, 1))
-      local Cx = State.X + 16 + Size / 2 - 4 * (1 - State.RailOpen)
-
-      DrawRect(Cx - Size / 2, Middle - Size / 2, Size, Size, Theme.Accent, 61, Layout.MonoRadius, 0.16)
-      DrawStroke(Cx - Size / 2, Middle - Size / 2, Size, Size, Theme.Text, 61, Layout.MonoRadius, Alpha.CardStroke)
-      DrawTextMid(Letter, Cx, Middle, Theme.Accent, Layout.TitleSize, BoldFont, 62, Alpha.Text)
-
-      HeadX = State.X + 16 + Size + 9
+      HeadX = HeadX + 28
     end
 
-    local Room = math.max(2, Edge - HeadX)
-    local TitleSize = Layout.HeaderTitle
-    local Full = TextWidth(State.Title, TitleSize, BoldFont)
+    local Right = (State.SearchLeft or (State.X + State.W - 80)) - 18
+    local TitleWidth = TextWidth(State.Title, Layout.TitleSize, BoldFont)
 
-    if Full > Room then TitleSize = math.max(11, math.floor(TitleSize * Room / Full)) end
+    DrawText(State.Title, HeadX, TextTop(State.Y, Layout.TopbarHeight, Layout.TitleSize), Theme.Text, Layout.TitleSize, BoldFont, 61, 1, Right - HeadX)
 
-    local Top = State.Y + 20 - math.floor(TitleSize / 2)
-    local Shade = Alpha.Text * State.RailOpen
-    local InfoBottom = State.Y + 34
+    local X = HeadX + TitleWidth + 9
 
-    DrawText(State.Title, HeadX, Top + 1, Black, TitleSize, BoldFont, 60, 0.28 * Shade, Room)
-    DrawText(State.Title, HeadX, Top, Theme.Accent, TitleSize, BoldFont, 61, Shade, Room)
+    if State.Subtitle ~= "" and X < Right - 40 then
+      DrawText(State.Subtitle, X, TextTop(State.Y, Layout.TopbarHeight, Layout.TinySize) + 1, Theme.Mute, Layout.TinySize, MonoFont, 61, 1, Right - X)
 
-    if State.Subtitle ~= "" then
-      DrawText(State.Subtitle, HeadX, State.Y + 34, Theme.Text, Layout.TinySize, SystemFont, 61, Alpha.Dim * State.RailOpen, Room)
-
-      InfoBottom = State.Y + 50
+      X = X + TextWidth(State.Subtitle, Layout.TinySize, MonoFont) + 18
     end
 
-    GradientRect(State.X + 12, InfoBottom, rail - 24, 1, Theme.AccentA, Theme.AccentB, 61, 0.3 * State.RailOpen)
+    local Status = State.Status
 
-    return InfoBottom
+    if type(Status) == "function" then
+      local Ok, Value = pcall(Status)
+      Status = Ok and Value or nil
+    end
+
+    if Status and Status ~= "" and X < Right - 60 then
+      DrawCircle(X + 3, Mid, 3, Theme.Text, 61, true, 1, 12, 1)
+      DrawText(tostring(Status), X + 12, TextTop(State.Y, Layout.TopbarHeight, Layout.TinySize) + 1, Theme.Dim, Layout.TinySize, MonoFont, 61, 1, Right - X - 12)
+    end
+
+    return State.Y + Layout.TopbarHeight
   end
 
 
@@ -2139,25 +2137,15 @@ do
   function DrawUserCard(rail)
     ReadPlayer()
 
-    local CardY = State.Y + State.H - Layout.UserCard
-    local Half = (rail - 28) / 2
-    local Rule = Alpha.Hairline * 1.8 * State.RailOpen
-    local Cx, Cy = State.X + 29, CardY + 16
-    local Room = math.max(2, rail - 100)
+    local CardY = State.Y + State.H - Layout.FooterHeight - Layout.UserCard
+    local Open = State.RailOpen
+    local Room = math.max(2, rail - 64)
 
-    FadeLine(State.X + 14, CardY - 10, Half, Theme.Text, 61, Rule, true)
-    FadeLine(State.X + 14 + Half, CardY - 10, Half, Theme.Text, 61, Rule)
-    if DrawPicture(State.Avatar, Cx - Layout.AvatarRadius, Cy - Layout.AvatarRadius, Layout.AvatarRadius * 2, Layout.AvatarRadius * 2, 629999, 1, Layout.AvatarRadius) then
-      DrawCircle(Cx, Cy, Layout.AvatarRadius, Theme.Text, 63, false, 1, 28, Alpha.Hairline)
-    else
-      DrawCircle(Cx, Cy, Layout.AvatarRadius, Theme.Accent, 61, true, 1, 28, 0.18)
-      DrawCircle(Cx, Cy, Layout.AvatarRadius, Theme.Text, 62, false, 1, 28, Alpha.Hairline)
-      DrawTextCenter(State.PlayerInitial, Cx, Cy - 7, Theme.Text, Layout.TextSize, BoldFont, 62, Alpha.Text)
-    end
-    DrawText(State.PlayerName, State.X + 50, CardY + 6, Theme.Text, Layout.SmallSize, BoldFont, 62, Alpha.Text * State.RailOpen, Room)
-    DrawText(State.PlayerHandle, State.X + 50, CardY + 22, Theme.Text, Layout.TinySize, SystemFont, 62, Alpha.Dim * State.RailOpen, Room)
+    DrawLine(State.X + 1, CardY, State.X + rail, CardY, Theme.Rule, 61, 1, 1)
+    DrawText(State.PlayerName, State.X + 16, CardY + 9, Theme.Text, Layout.SmallSize, SystemFont, 62, Open, Room)
+    DrawText(State.PlayerHandle, State.X + 16, CardY + 25, Theme.Mute, Layout.TinySize, MonoFont, 62, Open, Room)
 
-    if SettingsTab then DrawGear(State.X + rail - 26, Cy, 30, 20, 61, 629999, State.RailOpen, true) end
+    if SettingsTab then DrawGear(State.X + rail - 24, CardY + Layout.UserCard / 2, 28, 16, 61, 629999, 1, false) end
   end
 
 
@@ -2269,121 +2257,100 @@ local function DrawHeader(rail)
 end
 
 
-local function DrawSubs(tab, top, pillX, pillWidth, reveal)
-  local Count = #tab.Subs
-  local Stagger = math.min(Layout.SubStagger, Layout.SubSpan / math.max(1, Count - 1))
-  local Denominator = math.max(0.001, 1 - (Count - 1) * Stagger)
-  local SubX = pillX + Layout.SubIndent
-  local SubWidth = pillWidth - Layout.SubIndent
-  local Pill = Blend(Theme.Text, Theme.Accent, Layout.PillMix)
+-- 2.0: sub-tabs are an indented list under their tab, joined by a hairline; the open one is ink.
+local function DrawSubs(tab, top, x, width)
+  local SubY = top
+  local View = ActiveView()
+  local Open = State.RailOpen
 
-  for Index, Sub in ipairs(tab.Subs) do
-    local Raw = math.min(math.max((reveal - (Index - 1) * Stagger) / Denominator, 0), 1)
-    local Rise = Raw * Raw * (3 - 2 * Raw) * State.RailOpen
-    local SubY = top + (Index - 1) * (Layout.SubHeight + 4) - 3 * (1 - Rise)
-    local Live = Rise > 0.5 and reveal > 0.5
-    local Active = State.ActiveSub == Sub
-    local Hovered = Live and IsMouseIn(SubX, SubY, SubWidth, Layout.SubHeight)
+  DrawRect(x + 17, top + 4, 1, #tab.Subs * Layout.SubHeight - 8, Theme.Rule2, 62, 0, Open)
 
-    Sub.Glow = Settle(Sub.Glow or 0, Active and 1 or 0, 12, Layout.NavRest)
-    Sub.Hover = Settle(Sub.Hover or 0, Hovered and 1 or 0, 18, Layout.NavRest)
+  for _, Sub in ipairs(tab.Subs) do
+    local Active = View == Sub
+    local Hovered = IsMouseIn(x, SubY, width, Layout.SubHeight)
 
-    local Bright = Sub.Glow + (1 - Sub.Glow) * 0.35 * Sub.Hover
-    local LabelX = SubX + 20
+    if Active then DrawRect(x + 17, SubY + 7, 1, Layout.SubHeight - 14, Theme.Text, 63, 0, Open) end
 
-    DrawRect(SubX, SubY, SubWidth, Layout.SubHeight, Pill, 62, Layout.SubRadius, (0.05 * Sub.Glow + 0.04 * Sub.Hover * (1 - Sub.Glow)) * Rise)
+    DrawText(Sub.Name, x + 30, TextTop(SubY, Layout.SubHeight, Layout.SmallSize), (Active or Hovered) and Theme.Text or Theme.Dim, Layout.SmallSize, SystemFont, 63, Open, width - 44)
 
-    if Sub.Icon then
-      LabelX = SubX + 28
-
-      DrawIcon(Sub, "Image", Sub.Icon, SubX + 9, SubY + (Layout.SubHeight - Layout.SubIcon) / 2, Layout.SubIcon, 629998, Rise * (0.7 + 0.3 * Bright))
-      DrawIcon(Sub, "ImageOn", Sub.Icon, SubX + 9, SubY + (Layout.SubHeight - Layout.SubIcon) / 2, Layout.SubIcon, 629999, Rise * (0.7 + 0.3 * Bright) * Bright, Theme.Accent)
-    else
-      DrawCircle(SubX + 11, SubY + Layout.SubHeight / 2, 2, Blend(Theme.IconIdle, Theme.Accent, Bright), 63, true, 1, 12, Rise * (0.5 + 0.5 * Sub.Glow))
-    end
-
-    DrawText(Sub.Name, LabelX, TextTop(SubY, Layout.SubHeight, Layout.SmallSize), Blend(Theme.Idle, Theme.Text, Bright), Layout.SmallSize, SystemFont, 63, (0.86 + 0.14 * Sub.Glow) * Rise * State.RailOpen, SubWidth - (LabelX - SubX) - 6)
-
-    if Live and IsMouseIn(SubX, SubY, SubWidth, Layout.SubHeight) and Input.Click then
+    if Hovered and Input.Click then
       State.ActiveSub = Sub
       State.ContentFade = 0
       tab.LastSub = Sub
       Input.Click = false
     end
+
+    SubY = SubY + Layout.SubHeight
   end
+
+  return SubY - top + 4
 end
 
 
+-- 2.0: the website's side list. Text tabs, a 2px ink marker and a raised row on the open one,
+-- an optional mono meta on the right (TabClass:SetMeta). Icons only show on a collapsed rail.
 local function DrawRail(rail, infoBottom)
-  local PillX = State.X + Layout.PillIndent
-  local PillWidth = rail - Layout.PillIndent * 2
-  local RowY = math.floor(State.Y + 50 + (infoBottom + 12 - (State.Y + 50)) * State.RailOpen)
-  local Pill = Blend(Theme.Text, Theme.Accent, Layout.PillMix)
-  local Edge = State.X + rail - 18
+  local RowX = State.X + 1
+  local RowWidth = rail - 1
+  local RowY = infoBottom + 8
+  local Edge = State.X + rail - 14
+  local Open = State.RailOpen
   local Category = nil
 
   for Index, Tab in ipairs(State.Tabs) do
     if not Tab.Hidden then
       if Tab.Category and Tab.Category ~= Category then
-        RowY = RowY + (Category == nil and 6 or 12) * State.RailOpen
+        RowY = RowY + (Category == nil and 4 or 12)
 
-        DrawText(string.upper(Tab.Category), PillX + 2, RowY, Theme.Category, Layout.TinySize, BoldFont, 61, 0.42 * State.RailOpen, PillWidth - 4)
+        DrawText(string.lower(Tab.Category), RowX + 15, RowY, Theme.Mute, Layout.TinySize, MonoFont, 61, Open, RowWidth - 30)
 
-        RowY = RowY + 4 + 16 * State.RailOpen
+        RowY = RowY + 18
         Category = Tab.Category
       end
 
       local Count = #Tab.Subs
       local Branch = State.ActiveIndex == Index
-      local Leaf = Branch and Count == 0
-      local Hovered = IsMouseIn(PillX, RowY, PillWidth, Layout.PillHeight)
-
-      Tab.Glow = Settle(Tab.Glow or 0, Leaf and 1 or 0, 12, Layout.NavRest)
-      Tab.Hover = Settle(Tab.Hover or 0, Hovered and 1 or 0, 18, Layout.NavRest)
-      Tab.Open = Settle(Tab.Open or 0, Branch and 1 or 0, Branch and 14 or 17, Layout.NavRest)
-      Tab.Flash = Settle(Tab.Flash or 0, 0, 5, Layout.NavRest)
-
-      local Bright = Tab.Glow + (1 - Tab.Glow) * 0.5 * Tab.Hover
-      local IconBright = Count > 0 and math.max(0.5 * Tab.Hover, Tab.Flash) or Bright
-      local Slide = 1.5 * Tab.Hover * (1 - Tab.Glow)
+      local Hovered = IsMouseIn(RowX, RowY, RowWidth, Layout.PillHeight)
+      local Lit = Branch or (Hovered and State.HoverEffects ~= false)
       local Top = TextTop(RowY, Layout.PillHeight, Layout.TextSize)
-      local LabelX = PillX + 13
 
-      DrawRect(PillX, RowY, PillWidth, Layout.PillHeight, Pill, 61, Layout.PillRadius, 0.055 * Tab.Glow + 0.05 * Tab.Hover * (1 - Tab.Glow))
+      if Lit then DrawRect(RowX, RowY, RowWidth, Layout.PillHeight, Theme.Raise, 61, 0, 1) end
+      if Branch then DrawRect(RowX, RowY, 2, Layout.PillHeight, Theme.Text, 62, 0, 1) end
 
       if Tab.Icon then
-        local IconX = PillX + 10 - 3 * (1 - State.RailOpen) + Slide
+        local IconX = State.X + (Layout.RailNarrow - Layout.IconSize) / 2
         local IconY = RowY + (Layout.PillHeight - Layout.IconSize) / 2
 
-        LabelX = PillX + Layout.PillIcon
-
-        DrawIcon(Tab, "Image", Tab.Icon, IconX, IconY, Layout.IconSize, 629998, 0.7 + 0.3 * IconBright)
-        DrawIcon(Tab, "ImageOn", Tab.Icon, IconX, IconY, Layout.IconSize, 629999, (0.7 + 0.3 * IconBright) * IconBright, Theme.Accent)
+        DrawIcon(Tab, "Image", Tab.Icon, IconX, IconY, Layout.IconSize, 629998, (1 - Open) * (Lit and 1 or 0.6))
       end
 
-      local Room = math.max(2, Edge - LabelX)
+      local MetaWidth = 0
+      local Meta = Tab.Meta
 
-      DrawText(Tab.Name, LabelX + 1, Top + 1, Black, Layout.TextSize, BoldFont, 62, 0.22 * Tab.Glow, Room)
-      DrawText(Tab.Name, LabelX + Slide, Top, Blend(Theme.Idle, Theme.Text, Bright), Layout.TextSize, BoldFont, 63, (0.90 + 0.10 * Tab.Glow) * State.RailOpen, Room)
+      if Meta and Meta ~= "" then
+        Meta = tostring(Meta)
+        MetaWidth = TextWidth(Meta, Layout.TinySize, MonoFont)
+
+        DrawText(Meta, Edge - MetaWidth, TextTop(RowY, Layout.PillHeight, Layout.TinySize), Theme.Mute, Layout.TinySize, MonoFont, 63, Open)
+
+        MetaWidth = MetaWidth + 8
+      end
+
+      DrawText(Tab.Name, RowX + 16, Top, Lit and Theme.Text or Theme.Dim, Layout.TextSize, SystemFont, 63, Open, math.max(2, Edge - MetaWidth - RowX - 16))
 
       if Hovered and Input.Click then
         State.ActiveIndex = Index
         State.ActiveSub = Count > 0 and (Tab.LastSub or Tab.Subs[1]) or nil
         State.ContentFade = 0
         Tab.LastSub = State.ActiveSub
-        Tab.Flash = 1
         Input.Click = false
       end
 
       local Advance = Layout.PillHeight
 
-      if Count > 0 then
-        DrawSubs(Tab, RowY + Layout.PillHeight + 4, PillX, PillWidth, Tab.Open)
+      if Count > 0 and Branch and Open > 0.5 then Advance = Advance + DrawSubs(Tab, RowY + Layout.PillHeight, RowX, RowWidth) end
 
-        Advance = Advance + Tab.Open * State.RailOpen * (4 + Count * (Layout.SubHeight + 4))
-      end
-
-      RowY = RowY + Advance + 2 + 4 * State.RailOpen
+      RowY = RowY + Advance
     end
   end
 end
@@ -2465,22 +2432,17 @@ end
   local function DrawChip(bind, x, y, width, radius, fade, hovered, plain)
     local Label = bind.Listening and "..." or KeyName.Label(bind.Value)
     local Mode = bind.Mode or "Hold"
-    local ModeColor = (Mode == "Always" and Theme.AccentB) or (Mode == "Toggle" and Theme.AccentA) or Theme.Text
-    local Shade = bind.Listening and Alpha.Text or (hovered and Alpha.Hover or Alpha.Dim)
-    local EdgeColor = plain and Theme.Text or ModeColor
-    local EdgeAlpha = (plain or Mode == "Hold") and Alpha.Hairline or 0.55
+    local Edge = bind.Listening and Theme.Text or (hovered and Theme.Mute or Theme.Rule2)
+    local Tint = (bind.Listening or hovered) and Theme.Text or Theme.Dim
 
-    if bind.Listening then
-      DrawRect(x - 1, y - 1, width + 2, Layout.ChipHeight + 2, Theme.AccentB, 30, radius + 1, 0.18 * fade)
-      DrawRect(x, y, width, Layout.ChipHeight, Theme.Accent, 31, radius, 0.6 * fade)
-      DrawStroke(x, y, width, Layout.ChipHeight, Theme.AccentB, 32, radius, 0.85 * fade)
-    else
-      DrawRect(x, y, width, Layout.ChipHeight, Theme.Text, 31, radius, (Alpha.Field + 0.05 * bind.Glow) * fade)
-      DrawStroke(x, y, width, Layout.ChipHeight, Theme.AccentA, 32, radius, 0.45 * bind.Glow * fade)
-      DrawStroke(x, y, width, Layout.ChipHeight, EdgeColor, 32, radius, EdgeAlpha * fade)
-    end
+    DrawRect(x, y, width, Layout.ChipHeight, Theme.Raise, 31, radius, fade)
+    DrawStroke(x, y, width, Layout.ChipHeight, Edge, 32, radius, fade)
+    DrawRect(x + 1, y + Layout.ChipHeight - 1, width - 2, 1, Edge, 32, 0, fade)
 
-    DrawTextMid(Label, x + width / 2 + Layout.ChipNudge, y + 10, Theme.Text, Layout.TextSize, MonoFont, 33, Shade * fade)
+    -- toggle / always binds carry a small mark, hold binds none (right-click changes it)
+    if not plain and Mode ~= "Hold" then DrawRect(x + 4, y + 4, 2, 2, Mode == "Always" and Theme.Text or Theme.Dim, 33, 0, fade) end
+
+    DrawTextMid(Label, x + width / 2, y + Layout.ChipHeight / 2, Tint, Layout.SmallSize, MonoFont, 33, fade)
   end
 
 
@@ -2494,63 +2456,42 @@ end
   end
 
 
+  -- 2.0 switch: a 30x16 pill. Off is a raised track with a grey knob, on is ink with a black knob.
   local function DrawSwitch(row, x, y, width, fade, on, onColor)
-    local TrackX, TrackY = x + width - Layout.SwitchWidth, y + 3
+    local TrackX, TrackY = x + width - Layout.SwitchWidth, y + 5
     local Travel = Layout.SwitchWidth - Layout.SwitchKnob - 6
 
-    row.Fill = Approach(row.Fill or on, on, 16)
+    row.Fill = Approach(row.Fill or on, on, 18)
 
-    DrawRect(TrackX, TrackY, Layout.SwitchWidth, Layout.SwitchHeight, Blend(Theme.Track, onColor, row.Fill), 30, 6, fade)
-    DrawRect(TrackX + 3 + Travel * row.Fill, TrackY + 3, Layout.SwitchKnob, Layout.SwitchKnob, Theme.Text, 32, 4, fade)
+    local Fill = row.Fill
+
+    DrawRect(TrackX, TrackY, Layout.SwitchWidth, Layout.SwitchHeight, Blend(Theme.Raise, onColor, Fill), 30, Layout.SwitchHeight / 2, fade)
+    DrawStroke(TrackX, TrackY, Layout.SwitchWidth, Layout.SwitchHeight, Blend(Theme.Rule2, onColor, Fill), 31, Layout.SwitchHeight / 2, fade)
+    DrawRect(TrackX + 3 + Travel * Fill, TrackY + 3, Layout.SwitchKnob, Layout.SwitchKnob, Blend(Theme.Mute, Theme.Background, Fill), 32, Layout.SwitchKnob / 2, fade)
 
     return TrackX
   end
 
 
+  -- 2.0 checkbox: a 16px square, ink when on with a black tick.
   local function DrawCheck(row, x, y, width, fade, on, onColor)
     local Size = Layout.CheckboxSize
-    local BoxX, BoxY = x + width - Size, y + 4
-    local MidX, MidY = BoxX + Size / 2, BoxY + Size / 2
-    local Hovered = Interact and IsMouseIn(BoxX, BoxY, Size, Size)
-    local WantGlow = Hovered and 1 or 0
-    local WantPress = (Hovered and Input.Down) and 1 or 0
+    local BoxX, BoxY = x + width - Size, y + 5
+    local Hovered = Interact and IsMouseIn(BoxX - 4, BoxY - 4, Size + 8, Size + 8)
 
-    if row.Last == nil then row.Last = row.Value end
-    if row.Value ~= row.Last then row.Flash, row.Last = 1, row.Value end
+    row.Fill = Approach(row.Fill or on, on, 20)
 
-    row.Fill = Settle(row.Fill or on, on, row.Value and 13 or 15, Layout.CheckSnap)
-    row.Snap = Settle(row.Snap or on, on, 34, Layout.CheckSnap)
-    row.Glow = Settle(row.Glow or 0, WantGlow, 12, Layout.CheckRest)
-    row.Press = Settle(row.Press or 0, WantPress, 22, Layout.CheckRest)
-    row.Flash = Settle(row.Flash or 0, 0, 22, Layout.CheckRest)
+    local Fill = row.Fill
 
-    local Ease, Snap, Flash = row.Fill, row.Snap, row.Flash
-    local Shape = Ease * Ease * (3 - 2 * Ease) + 1.70658 * Ease * Ease * Ease * (1 - Ease) * Snap * on
-    local Scale = math.min(1, Shape)
-    local Over = math.min(math.max((Shape - 1) / 0.1, 0), 1)
-    local Swell = 4 * Ease * (1 - Ease)
-    local Stretch = 0.24 * Swell * Swell * (2 * Snap - 1)
-    local Grow = (2 + 10 * Shape) * (1 - 0.06 * row.Press)
-    local CoreW = math.min(Grow * (1 + Stretch), Layout.CheckMax)
-    local CoreH = math.min(Grow * (1 - 0.85 * Stretch), Layout.CheckMax)
-    local Radius = math.min(math.min(CoreW, CoreH) / 2, 3 + 2 * (1 - Scale))
-    local Lift = math.max(Swell, Over)
-    local HaloW = math.min(CoreW * (1 + 0.1 * Lift), Layout.CheckHaloMax)
-    local HaloH = math.min(CoreH * (1 + 0.1 * Lift), Layout.CheckHaloMax)
-    local Deep = Blend(onColor, Theme.Background, 0.5)
-    local Hot = Blend(onColor, Theme.Text, 0.55)
-    local Solid = math.min(1, Shape * 3)
-    local FlashW, FlashH = CoreW * (0.36 + 0.6 * Flash), CoreH * (0.36 + 0.6 * Flash)
-    local Span = math.max(CoreW, CoreH)
-    local Ring = math.min(Layout.CheckRingMax, Span + 3.6 * (1 - Over))
-    local CoreColor = Blend(Blend(Deep, onColor, math.min(1, Shape * 1.25)), Hot, math.min(1, 0.55 * Flash + 0.35 * Swell))
+    DrawRect(BoxX, BoxY, Size, Size, Blend(Theme.Raise, onColor, Fill), 30, 3, fade)
+    DrawStroke(BoxX, BoxY, Size, Size, Blend(Hovered and Theme.Mute or Theme.Rule2, onColor, Fill), 31, 3, fade)
 
-    DrawRect(BoxX, BoxY, Size, Size, Blend(Theme.Track, Deep, 0.55 * Scale), 30, 5, (0.5 + 0.12 * row.Glow) * fade)
-    DrawRect(MidX - HaloW / 2, MidY - HaloH / 2, HaloW, HaloH, Blend(onColor, Theme.Text, 0.35), 31, math.min(math.min(HaloW, HaloH) / 2, Radius + 1.2), 0.3 * Lift * Solid * fade)
-    DrawRect(MidX - CoreW / 2, MidY - CoreH / 2, CoreW, CoreH, CoreColor, 32, Radius, Solid * fade)
-    DrawRect(MidX - FlashW / 2, MidY - FlashH / 2, FlashW, FlashH, Theme.Text, 33, math.min(FlashW, FlashH) / 2 * (1 - 0.45 * Flash), 0.78 * Flash * Flash * fade)
-    DrawStroke(BoxX + (Size - Ring) / 2, BoxY + (Size - Ring) / 2, Ring, Ring, Hot, 34, math.min(Ring / 2, Radius + (Ring - Span) / 2), 0.5 * Over * fade)
-    DrawStroke(BoxX, BoxY, Size, Size, Blend(Theme.Text, onColor, math.min(1, 0.9 * Scale + 0.35 * Flash)), 35, 5, (Alpha.Hairline + 0.5 * math.max(Scale, row.Glow)) * fade)
+    if Fill > 0.4 then
+      local Shade = fade * math.min(1, (Fill - 0.4) / 0.4)
+
+      DrawBar(BoxX + 4, BoxY + 8.5, BoxX + 7, BoxY + 11.5, 1.8, Theme.Background, 32, Shade)
+      DrawBar(BoxX + 7, BoxY + 11.5, BoxX + 12.5, BoxY + 5, 1.8, Theme.Background, 32, Shade)
+    end
 
     return BoxX
   end
@@ -2602,7 +2543,19 @@ end
       end
     end
 
-    DrawText(row.Name, x, TextTop(y, Layout.RowHeight, Layout.TextSize), Theme.Text, Layout.TextSize, SystemFont, 31, Alpha.Label * fade, RightX - x - 4)
+    local NameTop = TextTop(y, Layout.RowHeight, Layout.TextSize)
+
+    DrawText(row.Name, x, NameTop, Theme.Text, Layout.TextSize, SystemFont, 31, Alpha.Label * fade, RightX - x - 4)
+
+    -- 2.0: risky toggles say so next to their name
+    if row.Risk then
+      local TagX = x + TextWidth(row.Name, Layout.TextSize, SystemFont) + 8
+
+      if TagX + 34 < RightX then
+        DrawStroke(TagX, NameTop, 30, 14, Theme.Risk, 31, 2, 0.45 * fade)
+        DrawTextMid("risk", TagX + 15, NameTop + 7, Theme.Risk, 10, MonoFont, 32, fade)
+      end
+    end
 
     if not (Interact and IsMouseIn(x, y, width, Layout.RowHeight) and Input.Click) then return end
     if OnSwatch or OnChip then return end
@@ -2614,26 +2567,31 @@ end
   end
 
 
+  -- 2.0 slider: label left, value right in mono (click it to type), a 1px track, ink fill and a
+  -- small rectangular thumb, as on the website.
   function DrawSlider(row, x, y, width, fade)
     local BarY = y + Layout.RowHeight
     local Span = row.Max - row.Min
-    local Fraction = (row.Value - row.Min) / Span
+    local Fraction = Span ~= 0 and (row.Value - row.Min) / Span or 0
     local Focused = State.Focus == row
     local Typed = row.Typing or ""
     local Text = Focused and Typed or (tostring(row.Value) .. (row.Suffix ~= "" and (" " .. row.Suffix) or ""))
     local CharWidth = Layout.SmallSize * Layout.EditWidth
-    local BoxWidth = math.max(40, (Focused and #Typed * CharWidth or TextWidth(Text, Layout.SmallSize, SystemFont)) + 16)
+    local BoxWidth = math.max(40, (Focused and #Typed * CharWidth or TextWidth(Text, Layout.SmallSize, MonoFont)) + 14)
     local BoxX = x + width - BoxWidth
     local TextX = BoxX + 7
     local TextY = TextTop(y, Layout.ValueHeight, Layout.SmallSize)
     local OnBox = Interact and IsMouseIn(BoxX, y, BoxWidth, Layout.ValueHeight)
+    local Grab = (Interact and IsMouseIn(x - 4, BarY - 8, width + 8, 16)) or State.Sliding == row
 
-    row.Fill = Approach(row.Fill or Fraction, Fraction, 20)
-    row.Knob = Approach(row.Knob or Layout.KnobRadius, ((Interact and IsMouseIn(x + width * row.Fill - 9, BarY - 5, 18, 18)) or State.Sliding == row) and Layout.KnobHover or Layout.KnobRadius, 16)
+    row.Fill = Approach(row.Fill or Fraction, Fraction, 22)
 
-    DrawText(row.Name, x, TextTop(y, 16, Layout.TextSize), Theme.Text, Layout.TextSize, SystemFont, 31, Alpha.Label * fade, width - BoxWidth - 8)
-    DrawRect(BoxX, y, BoxWidth, Layout.ValueHeight, Theme.Text, 30, 3, Alpha.Field * fade)
-    DrawStroke(BoxX, y, BoxWidth, Layout.ValueHeight, Theme.Text, 31, 3, (Focused and 0.4 or Alpha.Hairline) * fade)
+    DrawText(row.Name, x, TextTop(y, Layout.ValueHeight, Layout.TextSize), Theme.Text, Layout.TextSize, SystemFont, 31, Alpha.Label * fade, width - BoxWidth - 8)
+
+    if Focused or OnBox then
+      DrawRect(BoxX, y, BoxWidth, Layout.ValueHeight, Theme.Raise, 30, 2, fade)
+      DrawStroke(BoxX, y, BoxWidth, Layout.ValueHeight, Focused and Theme.Dim or Theme.Rule2, 31, 2, fade)
+    end
 
     if Focused then
       local Caret = math.min(math.max(row.Caret or #Typed, 0), #Typed)
@@ -2647,14 +2605,17 @@ end
 
       if Blink then DrawRect(TextX + Caret * CharWidth, TextY, Layout.CaretWidth, Layout.SmallSize, Theme.Text, 32, 0, Alpha.Text * fade) end
     else
-      DrawTextCenter(Text, BoxX + BoxWidth / 2, TextY, Theme.Text, Layout.SmallSize, SystemFont, 32, Alpha.Dim * fade, BoxWidth - 8)
+      local ValueWidth = TextWidth(Text, Layout.SmallSize, MonoFont)
+
+      DrawText(Text, x + width - ValueWidth - (OnBox and 7 or 0), TextY, OnBox and Theme.Text or Theme.Dim, Layout.SmallSize, MonoFont, 32, fade)
     end
 
-    DrawRect(x, BarY, width, Layout.BarHeight, Theme.SliderTrack, 30, 4, fade)
+    local ThumbX = x + width * row.Fill
+    local ThumbW, ThumbH = Grab and 8 or 6, Grab and 14 or 12
 
-    if row.Fill > 0.001 then DrawRect(x, BarY, math.max(Layout.BarHeight, width * row.Fill), Layout.BarHeight, Blend(Theme.AccentA, Theme.AccentB, row.Fill), 31, 4, fade) end
-
-    DrawCircle(x + width * row.Fill, BarY + 4, row.Knob, Theme.Text, 32, true, 1, 24, fade)
+    DrawRect(x, BarY, width, 1, Theme.SliderTrack, 30, 0, fade)
+    if row.Fill > 0.001 then DrawRect(x, BarY, width * row.Fill, 1, Theme.Accent, 31, 0, fade) end
+    DrawRect(ThumbX - ThumbW / 2, BarY - ThumbH / 2 + 0.5, ThumbW, ThumbH, Theme.Text, 32, 1, fade)
 
     if Input.Click and OnBox then
       if not Focused then row.Typing = tostring(row.Value) end
@@ -2685,11 +2646,10 @@ end
   local function DrawButton(row, x, y, width, fade)
     local Hovered = Interact and IsMouseIn(x, y, width, Layout.ButtonHeight)
 
-    row.Glow = Approach(row.Glow or 0, Hovered and 1 or 0, 16)
+    if Hovered then DrawRect(x, y, width, Layout.ButtonHeight, Theme.Hover, 30, Layout.CardRadius, fade) end
 
-    DrawRect(x, y, width, Layout.ButtonHeight, Theme.Text, 30, Layout.CardRadius, (Alpha.Field + 0.06 * row.Glow) * fade)
-    DrawStroke(x, y, width, Layout.ButtonHeight, Theme.Text, 31, Layout.CardRadius, (Alpha.Hairline + 0.22 * row.Glow) * fade)
-    DrawTextMid(row.Name, x + width / 2, TextTop(y, Layout.ButtonHeight, Layout.TextSize), Theme.Text, Layout.TextSize, SystemFont, 32, (Alpha.Label + (Alpha.Hover - Alpha.Label) * row.Glow) * fade)
+    DrawStroke(x, y, width, Layout.ButtonHeight, Hovered and Theme.Mute or Theme.Rule2, 31, Layout.CardRadius, fade)
+    DrawTextMid(row.Name, x + width / 2, y + Layout.ButtonHeight / 2, Theme.Text, Layout.SmallSize, SystemFont, 32, fade)
 
     if Hovered and Input.Click then row.Callback() end
   end
@@ -2757,30 +2717,19 @@ end
 
 
   function DrawDivider(row, x, y, width, fade)
-    local Tint = Blend(Theme.AccentA, Theme.AccentB, Layout.ShimmerMix)
-    local LineY = y + Layout.DividerHeight / 2
+    local LineY = math.floor(y + Layout.DividerHeight / 2)
 
     if not row.Name then
-      local Half = width / 2
-      local Plain = Alpha.DividerPlain * fade
-
-      FadeLine(x, LineY, Half, Tint, 30, Plain, true)
-      FadeLine(x + Half, LineY, Half, Tint, 30, Plain)
+      DrawRect(x, LineY, width, 1, Theme.Rule, 30, 0, fade)
 
       return
     end
 
-    local Center = x + width / 2
-    local Half = TextWidth(row.Name, Layout.SmallSize, SystemFont) / 2 + Layout.DividerPad
-    local Tail = Center + Half
-    local HeadWidth = Center - Half - x
-    local TailWidth = x + width - Tail
-    local Shade = Alpha.Divider * fade
-    local TextAlpha = Alpha.Dim * fade
+    local Label = string.lower(row.Name)
+    local LabelWidth = TextWidth(Label, Layout.TinySize, MonoFont)
 
-    FadeLine(x, LineY, HeadWidth, Tint, 30, Shade, true)
-    DrawTextMid(row.Name, Center, LineY, Theme.Text, Layout.SmallSize, SystemFont, 31, TextAlpha)
-    FadeLine(Tail, LineY, TailWidth, Tint, 30, Shade)
+    DrawText(Label, x, TextTop(LineY, 0, Layout.TinySize), Theme.Mute, Layout.TinySize, MonoFont, 31, fade, width)
+    DrawRect(x + LabelWidth + 10, LineY, math.max(0, width - LabelWidth - 10), 1, Theme.Rule, 30, 0, fade)
   end
 
 
@@ -2795,18 +2744,12 @@ end
     for Index, Button in ipairs(Buttons) do
       local ButtonX = x + (Index - 1) * (ButtonWidth + Layout.ButtonGap)
       local Hovered = Interact and IsMouseIn(ButtonX, y, ButtonWidth, Layout.ButtonHeight)
+      local Pressed = Hovered and Input.Down
 
-      Button.Glow = Approach(Button.Glow or 0, Hovered and 1 or 0, 16)
+      if Hovered then DrawRect(ButtonX, y, ButtonWidth, Layout.ButtonHeight, Pressed and Theme.Rule or Theme.Hover, 30, Layout.CardRadius, fade) end
 
-      local Glow = Button.Glow
-      local MidX = ButtonX + ButtonWidth / 2
-      local FillAlpha = (Alpha.Field + 0.06 * Glow) * fade
-      local EdgeAlpha = (Alpha.Hairline + 0.22 * Glow) * fade
-      local TextAlpha = (Alpha.Label + (Alpha.Hover - Alpha.Label) * Glow) * fade
-
-      DrawRect(ButtonX, y, ButtonWidth, Layout.ButtonHeight, Theme.Text, 30, Layout.CardRadius, FillAlpha)
-      DrawStroke(ButtonX, y, ButtonWidth, Layout.ButtonHeight, Theme.Text, 31, Layout.CardRadius, EdgeAlpha)
-      DrawTextMid(Button.Name, MidX, TextY, Color, Layout.TextSize, SystemFont, 32, TextAlpha)
+      DrawStroke(ButtonX, y, ButtonWidth, Layout.ButtonHeight, Hovered and Theme.Mute or Theme.Rule2, 31, Layout.CardRadius, fade)
+      DrawTextMid(Button.Name, ButtonX + ButtonWidth / 2, TextY, Color, Layout.SmallSize, SystemFont, 32, (Hovered and 1 or 0.9) * fade)
 
       if Clicked and Hovered then
         Clicked, Input.Click = false, false
@@ -2815,6 +2758,7 @@ end
       end
     end
   end
+
 
   function DrawKeybind(row, x, y, width, fade)
     local ChipSize = ChipWidth(row, Layout.ChipMin, Layout.ChipPad)
@@ -2864,13 +2808,11 @@ end
     row.KnobHigh = Approach(row.KnobHigh or Layout.KnobRadius, ActiveHigh and Layout.KnobHover or Layout.KnobRadius, 16)
 
     DrawText(row.Name, x, TextTop(y, 16, Layout.TextSize), Theme.Text, Layout.TextSize, SystemFont, 31, Alpha.Label * fade, width - Layout.RangeLabelRoom)
-    DrawRect(BoxX, y, BoxWidth, Layout.ValueHeight, Theme.Text, 30, 3, Alpha.Field * fade)
-    DrawStroke(BoxX, y, BoxWidth, Layout.ValueHeight, Theme.Text, 31, 3, Alpha.Hairline * fade)
-    DrawTextCenter(Text, BoxX + BoxWidth / 2, TextTop(y, Layout.ValueHeight, Layout.SmallSize), Theme.Text, Layout.SmallSize, SystemFont, 32, Alpha.Dim * fade, BoxWidth - 8)
-    DrawRect(x, BarY, width, Layout.BarHeight, Theme.SliderTrack, 30, 4, fade)
-    if FillWidth > Layout.RangeFillMin then DrawRect(LowX, BarY, math.max(Layout.BarHeight, FillWidth), Layout.BarHeight, FillColor, 31, 4, fade) end
-    DrawCircle(LowX, BarY + 4, row.KnobLow, Theme.Text, 32, true, 1, 24, fade)
-    DrawCircle(HighX, BarY + 4, row.KnobHigh, Theme.Text, 32, true, 1, 24, fade)
+    DrawText(Text, x + width - TextWidth(Text, Layout.SmallSize, MonoFont), TextTop(y, Layout.ValueHeight, Layout.SmallSize), Theme.Dim, Layout.SmallSize, MonoFont, 32, fade)
+    DrawRect(x, BarY, width, 1, Theme.SliderTrack, 30, 0, fade)
+    if FillWidth > Layout.RangeFillMin then DrawRect(LowX, BarY, FillWidth, 1, Theme.Accent, 31, 0, fade) end
+    DrawRect(LowX - (ActiveLow and 4 or 3), BarY - (ActiveLow and 7 or 6) + 0.5, ActiveLow and 8 or 6, ActiveLow and 14 or 12, Theme.Text, 32, 1, fade)
+    DrawRect(HighX - (ActiveHigh and 4 or 3), BarY - (ActiveHigh and 7 or 6) + 0.5, ActiveHigh and 8 or 6, ActiveHigh and 14 or 12, Theme.Text, 32, 1, fade)
 
     if Input.Click and Interact and IsMouseIn(x - 4, BarY - 8, width + 8, 16) then
       row.Handle = Input.X < (LowX + HighX) / 2 and "Low" or "High"
@@ -2922,8 +2864,8 @@ end
     local Hit = math.min(math.max((row.Scroll or 0) + math.floor((Input.X - (row.EditX or 0)) / (row.CharWidth or CharWidth) + 0.5), 0), Length)
 
     DrawText(row.Name, x, TextTop(y, Layout.LabelHeight, Layout.TextSize), Theme.Text, Layout.TextSize, SystemFont, 31, Alpha.Label * fade, width)
-    DrawRect(x, BoxY, width, Layout.FieldHeight, Theme.Text, 30, Layout.FieldRadius, Alpha.Field * fade)
-    DrawStroke(x, BoxY, width, Layout.FieldHeight, Theme.Text, 31, Layout.FieldRadius, Edge * fade)
+    DrawRect(x, BoxY, width, Layout.FieldHeight, Theme.Raise, 30, Layout.FieldRadius, fade)
+    DrawStroke(x, BoxY, width, Layout.FieldHeight, Focused and Theme.Dim or (Hovered and Theme.Mute or Theme.Rule2), 31, Layout.FieldRadius, fade)
 
     if Empty then DrawText(row.Name, TextX, TextY, Theme.Text, Layout.TextSize, SystemFont, 32, Alpha.Placeholder * fade, width - Layout.PlaceholderInset) end
     if not Empty and not Focused then DrawText(Value, TextX, TextY, Theme.Text, Layout.TextSize, SystemFont, 32, Alpha.Text * fade, width - Layout.FieldInset) end
@@ -3013,8 +2955,9 @@ end
     local ArrowColor = Blend(Theme.Text, Theme.Accent, row.Glow)
 
     DrawText(row.Name, x, LabelY, Theme.Text, Layout.TextSize, SystemFont, 31, Alpha.Label * fade, LabelRoom)
-    DrawRect(BoxX, BoxY, BoxWidth, Layout.FieldHeight, Theme.Text, 30, Layout.CardRadius, BoxAlpha * fade)
-    DrawText(Display, BoxX + Layout.FieldPad, TextTop(BoxY, Layout.FieldHeight, Layout.TextSize), Theme.Text, Layout.TextSize, SystemFont, 32, Alpha.Dim * fade, BoxWidth - Layout.DropdownTextRoom)
+    DrawRect(BoxX, BoxY, BoxWidth, Layout.FieldHeight, Theme.Raise, 30, Layout.FieldRadius, fade)
+    DrawStroke(BoxX, BoxY, BoxWidth, Layout.FieldHeight, (Open and Theme.Dim) or (Hovered and Theme.Mute) or Theme.Rule2, 31, Layout.FieldRadius, fade)
+    DrawText(Display, BoxX + Layout.FieldPad, TextTop(BoxY, Layout.FieldHeight, Layout.SmallSize), Theme.Text, Layout.SmallSize, SystemFont, 32, 0.92 * fade, BoxWidth - Layout.DropdownTextRoom)
     DrawChevron(BoxX + BoxWidth - Layout.ArrowInset, BoxY + Layout.FieldHeight / 2, Layout.ArrowRadius, Turn, ArrowColor, 32, (Alpha.Dim + Alpha.ArrowLift * row.Glow) * fade)
 
     if not (Hovered and Input.Click) then return end
@@ -3722,14 +3665,52 @@ local RowHeight = {
 }
 
 
+-- 2.0: a row's tooltip is shown as a description under it (website style), wrapped to the
+-- column and capped at three lines. State.ShowDescs = false goes back to hover tooltips.
+Fix.DescKinds = { Toggle = true, Slider = true, Range = true, Dropdown = true, Textbox = true, Keybind = true, Color = true, Button = true }
+Fix.RowPad = 5
+Fix.DescLine = 14
+
+
+function Fix.DescLines(row)
+  if State.ShowDescs == false or type(row.Tip) ~= "string" or row.Tip == "" or not Fix.DescKinds[row.Kind] then return nil end
+
+  local Room = math.max(80, row.RoomHint or 260)
+
+  if row.DescFor == row.Tip and row.DescRoom == Room then return row.Desc end
+
+  local Lines = WrapText(row.Tip, Room, Layout.SmallSize, SystemFont)
+
+  if #Lines > 3 then
+    Lines = { Lines[1], Lines[2], Lines[3] .. "..." }
+  end
+
+  row.DescFor, row.DescRoom, row.Desc = row.Tip, Room, Lines
+
+  return Lines
+end
+
+
 local function RowSpan(row)
-  if row.Kind == "Dropdown" and State.DropdownInline then return Layout.DropdownInlineRow end
-  if row.Kind == "Label" then return math.max(18, (row.LineCount or 1) * Layout.LabelLine + 2) end
-  if row.Kind == "Info" then return math.max(16, (row.LineCount or 1) * Layout.InfoLine + 2) end
+  local Base
+
   if row.Kind == "Space" then return row.Height or 10 end
 
-  return RowHeight[row.Kind]
+  if row.Kind == "Dropdown" and State.DropdownInline then
+    Base = Layout.DropdownInlineRow
+  elseif row.Kind == "Label" then
+    Base = math.max(18, (row.LineCount or 1) * Layout.LabelLine + 2) + Fix.RowPad * 2
+  elseif row.Kind == "Info" then
+    Base = math.max(16, (row.LineCount or 1) * Layout.InfoLine + 2) + Fix.RowPad * 2
+  else
+    Base = RowHeight[row.Kind]
+  end
+
+  local Lines = Fix.DescLines(row)
+
+  return Base + (Lines and #Lines * Fix.DescLine or 0), Base
 end
+
 
 local RowDrawer = {
   Toggle = DrawToggle,
@@ -3812,6 +3793,7 @@ do
   end
 
 
+  -- 2.0: a mono label, a hairline to the edge, the description under it. Click folds it.
   function DrawSectionTitle(section, x, y, width, clipTop, clipBottom, fade, blocked)
     local Title = SectionTitleHeight(section)
     if Title == 0 then return end
@@ -3819,59 +3801,39 @@ do
     local Shade = fade * math.min(math.max((y + Title - clipTop) / Title, 0), 1) * math.min(math.max((clipBottom - y) / Title, 0), 1)
     if Shade <= 0.01 then return end
 
-    local Upper = string.upper(section.Name)
-    local RuleX = x + 4 + math.min(TextWidth(Upper, Layout.TinySize, BoldFont), width - 40) + 10
+    local Label = string.lower(section.Name)
+    local LabelWidth = math.min(TextWidth(Label, Layout.TinySize, MonoFont), width - 40)
+    local RuleX = x + LabelWidth + 10
+    local Fold = section.Collapsed and "+" or ""
 
-    DrawText(Upper, x + 4, y + 2, Theme.Accent, Layout.TinySize, BoldFont, 31, (section.Collapsed and 0.55 or 0.85) * Shade, width - 22)
+    DrawText(Label, x, y + 2, section.Collapsed and Theme.Mute or Theme.Dim, Layout.TinySize, MonoFont, 31, Shade, width - 20)
+    DrawRect(RuleX, y + 8, math.max(0, x + width - RuleX - (Fold ~= "" and 14 or 0)), 1, Theme.Rule, 31, 0, Shade)
 
-    if section.Desc then DrawText(section.Desc, x + 4, y + 15, Theme.Text, 10, SystemFont, 31, Alpha.Dim * 0.72 * Shade, width - 22) end
-
-    FadeLine(RuleX, y + 8, (x + width - 6) - RuleX, Theme.Accent, 31, (section.Collapsed and 0.18 or 0.30) * Shade)
+    if Fold ~= "" then DrawText(Fold, x + width - 8, y + 1, Theme.Mute, Layout.TinySize, MonoFont, 31, Shade) end
+    if section.Desc then DrawText(section.Desc, x, y + 19, Theme.Mute, Layout.TinySize, SystemFont, 31, Shade, width) end
 
     if blocked or not Input.Click then return end
-    if not IsMouseIn(x, y, width, Title) then return end
+    if not IsMouseIn(x, y, width, Layout.SectionTitle) then return end
 
     section.Collapsed = not section.Collapsed
     Input.Click = false
   end
 
 
-  function DrawSectionCard(section, x, y, width, height, clipTop, clipBottom, fade, blocked)
-    if section.Fold > 0.98 then return end
-
-    local Title = SectionTitleHeight(section)
-    local CardTop = y + Title
-    local CardY = math.max(CardTop, clipTop)
-    local CardBottom = math.min(y + height, clipBottom)
-    local CardHeight = CardBottom - CardY
-    local Hovered = not blocked and IsMouseIn(x, CardY, width, CardHeight) and State.HoverEffects ~= false
-
-    section.Glow = Approach(section.Glow or 0, Hovered and 1 or 0, 6)
-
-    local Halo = section.Glow * fade * State.Glow
-
-    DrawRect(x, CardY, width, CardHeight, Blend(Theme.Text, Theme.Idle, 0.40), 28, Layout.CardRadius, Alpha.Card * 2.1 * fade)
-
-    if not State.Lite then
-      DrawStroke(x - 2, CardY - 2, width + 4, CardHeight + 4, Theme.Accent, 32, 7, 0.05 * Halo)
-      DrawStroke(x - 1, CardY - 1, width + 2, CardHeight + 2, Theme.Accent, 32, 6, 0.11 * Halo)
-    end
-
-    DrawStroke(x, CardY, width, CardHeight, Theme.Accent, 33, Layout.CardRadius, 0.34 * Halo)
+  -- 2.0: no cards. Sections are separated by their label and the rows' hairlines.
+  function DrawSectionCard()
   end
 
 
   function DrawSectionRows(section, x, y, width, height, clipTop, clipBottom, fade, blocked)
     local CardBottom = math.min(clipBottom, y + height)
-    local RowX = x + Layout.CardLeft
     local RowY = y + SectionTitleHeight(section) + Layout.CardTopPad
-    local RowWidth = width - Layout.CardInset
-    local Gap = State.RowLines and 4 or Layout.RowGap
     local Shown = Fix.VisibleRows(section)
-    local Count = #Shown
 
-    for Index, Row in ipairs(Shown) do
-      local Height = RowSpan(Row)
+    for _, Row in ipairs(Shown) do
+      Row.RoomHint = width - 8
+
+      local Height, Base = RowSpan(Row)
 
       if Row == State.SpotJump then
         local Tab = ActiveView()
@@ -3888,28 +3850,38 @@ do
         if RowY < clipTop then Clip = math.min(math.max(1 - (clipTop - RowY) / (Height * 0.5), 0), 1) end
         if RowY + Height > CardBottom then Clip = math.min(Clip, math.min(math.max(1 - (RowY + Height - CardBottom) / (Height * 0.5), 0), 1)) end
 
-        local Shade = (RowLocked(Row) and 0.4 or 1) * fade * Clip
+        local Shade = (RowLocked(Row) and 0.38 or 1) * fade * Clip
+        local Pad = Row.Kind == "Space" and 0 or Fix.RowPad
+        local Desc = Fix.DescLines(Row)
 
         Interact = Shade > 0.5 and not blocked
 
-        if Row.Tip and Interact and IsMouseIn(RowX, RowY, RowWidth, Height) then WantTooltip(Row.Tip, Input.X, Input.Y) end
+        if Row.Tip and not Desc and Interact and IsMouseIn(x, RowY, width, Height) then WantTooltip(Row.Tip, Input.X, Input.Y) end
 
-        RowDrawer[Row.Kind](Row, RowX, RowY, RowWidth, Shade)
+        RowDrawer[Row.Kind](Row, x, RowY + Pad, width, Shade)
+
+        if Desc then
+          local DescY = RowY + (Base or Height) - Pad
+
+          for Index = 1, #Desc do
+            DrawText(Desc[Index], x, DescY + (Index - 1) * Fix.DescLine, Theme.Mute, Layout.SmallSize, SystemFont, 31, Shade, width)
+          end
+        end
 
         if (Row.Reveal or 0) > os.clock() then
           local Pulse = 0.35 + 0.5 * math.min(math.max(0.5 + 0.5 * math.sin(os.clock() * 9), 0), 1)
 
-          DrawStroke(RowX - 4, RowY - 4, RowWidth + 8, Height + 8, Theme.Accent, 33, 7, Pulse * Shade)
+          DrawStroke(x - 4, RowY, width + 8, Height, Theme.Text, 33, 3, Pulse * Shade)
         end
 
-        if State.RowLines and Index < Count then
-          local LineY = RowY + Height + Gap / 2
+        if Row.Kind ~= "Space" and State.RowLines ~= false then
+          local LineY = RowY + Height - 1
 
-          if LineY > clipTop and LineY < CardBottom then DrawLine(x + 14, LineY, x + width - 14, LineY, Theme.Text, 31, 1, 0.12 * fade * Clip) end
+          if LineY > clipTop and LineY < CardBottom then DrawRect(x, LineY, width, 1, Theme.Hover, 31, 0, fade * Clip) end
         end
       end
 
-      RowY = RowY + Height + (Index < Count and Gap or 0)
+      RowY = RowY + Height
     end
 
     Interact = true
@@ -4008,9 +3980,8 @@ do
 
     tab.BarGlow = Glow
 
-    DrawRect(TrackX + 0.5, y, 3, height, Theme.Text, 34, 1.5, (0.05 + 0.05 * Glow) * fade)
-    DrawRect(BarX - 2, BarY - 3, BarWidth + 4, BarHeight + 6, BarColor, 35, (BarWidth + 4) / 2, 0.16 * Glow * fade)
-    DrawRect(BarX, BarY, BarWidth, BarHeight, BarColor, 36, BarWidth / 2, (0.55 + 0.45 * Glow) * fade)
+    DrawRect(TrackX + 1, y, 1, height, Theme.Rule, 34, 0, fade)
+    DrawRect(TrackX, BarY, 3, BarHeight, Theme.Text, 36, 1.5, (0.28 + 0.5 * Glow) * fade)
 
     if Input.Click and IsMouseIn(TrackX - 7, y, 18, height) then
       State.BarDrag = { Tab = tab, Grab = IsMouseIn(TrackX - 7, BarY, 18, BarHeight) and (Input.Y - BarY) or (BarHeight / 2) }
@@ -4061,7 +4032,7 @@ local function DrawSections(rail)
   local Width = Wide and (State.W - 34) or (State.W - rail - Layout.ContentPad * 2 - Layout.ScrollGutter)
   local ColumnWidth = math.floor((Width - Layout.ColumnGap) / 2)
   local Top = Wide and (State.Y + Layout.TitleHeight + Layout.TopbarHeight + 8) or (State.Y + Layout.TopbarHeight + Layout.ContentTop)
-  local Height = State.Y + State.H - Top - Layout.ContentBottom
+  local Height = State.Y + State.H - Top - Layout.ContentBottom - Layout.FooterHeight
   local Total = ContentHeight(Tab, Height)
 
   ScrollInput(Tab, Left, Top, Width, Height, Blocked)
@@ -4218,8 +4189,8 @@ do
     local BarAlpha = Alpha.NoteBar * Fade * math.min(math.max(BarWidth, 0), 1)
 
     DrawRect(NoteX + Layout.NoteShadowX, NoteY + Layout.NoteShadowY, Layout.NoteWidth, Height, Black, 299, Layout.NoteRadius, Alpha.NoteShadow * Fade)
-    DrawRect(NoteX, NoteY, Layout.NoteWidth, Height, Theme.Background, 300, Layout.NoteRadius, Alpha.NoteFill * Fade)
-    DrawStroke(NoteX, NoteY, Layout.NoteWidth, Height, Theme.Text, 301, Layout.NoteRadius, Alpha.Hairline * Fade)
+    DrawRect(NoteX, NoteY, Layout.NoteWidth, Height, Theme.Raise, 300, Layout.NoteRadius, Alpha.NoteFill * Fade)
+    DrawStroke(NoteX, NoteY, Layout.NoteWidth, Height, Kind == "error" and Theme.Risk or Theme.Rule2, 301, Layout.NoteRadius, (Kind == "error" and 0.5 or 1) * Fade)
     DrawCircle(NoteX + Layout.NoteDotX, NoteY + Layout.NoteDotY, Layout.NoteDot, Tint, 302, true, 1, 16, Fade)
     DrawText(note.Title, NoteX + Layout.NoteTextX, NoteY + Layout.NoteTitleY, TitleColor, Layout.TextSize, BoldFont, 302, TitleAlpha, TitleRoom)
 
@@ -4230,7 +4201,7 @@ do
     if Kind then
       DrawRect(TrackX, TrackY, BarShown, Layout.NoteBarHeight, Tint, 303, Layout.NoteBarRadius, BarAlpha)
     else
-      GradientRect(TrackX, TrackY, BarShown, Layout.NoteBarHeight, Theme.AccentA, Theme.AccentB, 303, BarAlpha)
+      DrawRect(TrackX, TrackY, BarShown, Layout.NoteBarHeight, Theme.Dim, 303, 0, BarAlpha)
     end
 
     return TargetY - Layout.NoteGap
@@ -4282,8 +4253,8 @@ local function DrawTooltip()
   local TextX = BoxX + Layout.TipInset
   local TextY = BoxY + Layout.TipTextTop
 
-  DrawRect(BoxX, BoxY, Width, Height, Theme.Background, 320, Layout.TipRadius, Alpha.TipFill)
-  DrawStroke(BoxX, BoxY, Width, Height, Theme.Text, 321, Layout.TipRadius, Alpha.CardStroke)
+  DrawRect(BoxX, BoxY, Width, Height, Theme.Raise, 320, Layout.TipRadius, Alpha.TipFill)
+  DrawStroke(BoxX, BoxY, Width, Height, Theme.Rule2, 321, Layout.TipRadius, 1)
 
   for Index = 1, #Lines do DrawText(Lines[Index], TextX, TextY + (Index - 1) * Layout.TipLine, Theme.Text, Layout.SmallSize, UiFont, 322, Alpha.Text) end
 end
@@ -4329,18 +4300,19 @@ local function DrawDialog()
 
   DrawRect(BoxX + Layout.DialogShadowX, BoxY + Layout.DialogShadowY, Layout.DialogWidth, Height, Black, 451, Layout.DialogRadius, Alpha.DialogShadow * Fade)
   DrawRect(BoxX, BoxY, Layout.DialogWidth, Height, Theme.Background, 452, Layout.DialogRadius, Alpha.DialogFill * Fade)
-  DrawStroke(BoxX - Layout.DialogHaloOut, BoxY - Layout.DialogHaloOut, Layout.DialogWidth + Layout.DialogHaloOut * 2, Height + Layout.DialogHaloOut * 2, Accent, 453, Layout.DialogHaloRadius, Alpha.DialogHalo * Fade)
-  DrawStroke(BoxX, BoxY, Layout.DialogWidth, Height, Theme.Text, 453, Layout.DialogRadius, Alpha.DialogEdge * Fade)
-  DrawText(Dialog.Title, TextX, TitleY, Accent, Layout.DialogTitle, BoldFont, 454, Fade, Room)
+  DrawStroke(BoxX, BoxY, Layout.DialogWidth, Height, Theme.Rule2, 453, Layout.DialogRadius, Fade)
+  DrawRect(BoxX + 1, ButtonY - Layout.DialogButtonPad + 1, Layout.DialogWidth - 2, Height - (ButtonY - BoxY) + Layout.DialogButtonPad - 2, Theme.Raise, 453, 0, Fade)
+  DrawRect(BoxX + 1, ButtonY - Layout.DialogButtonPad, Layout.DialogWidth - 2, 1, Theme.Rule, 453, 0, Fade)
+  DrawText(Dialog.Title, TextX, TitleY, Theme.Text, Layout.DialogTitle, BoldFont, 454, Fade, Room)
 
   for Index = 1, #Lines do DrawText(Lines[Index], TextX, BodyY + (Index - 1) * Layout.DialogLine, Theme.Text, Layout.TextSize, SystemFont, 454, Alpha.Label * Fade, Room) end
   for Index = 1, #Warn do DrawText(Warn[Index], TextX, BodyY + (#Lines + Index) * Layout.DialogLine, Color3.fromRGB(255, 92, 92), Layout.TextSize, BoldFont, 454, Fade, Room) end
 
-  DrawStroke(CancelX, ButtonY, ButtonWidth, Layout.DialogButton, Theme.Text, 454, Layout.DialogButtonRadius, CancelEdge)
-  DrawTextMid(Dialog.Cancel, CancelX + ButtonWidth / 2, ButtonTextY, Theme.Text, Layout.TextSize, BoldFont, 455, CancelLabel)
-  DrawRect(ConfirmX, ButtonY, ButtonWidth, Layout.DialogButton, Accent, 454, Layout.DialogButtonRadius, ConfirmFill)
-  DrawStroke(ConfirmX, ButtonY, ButtonWidth, Layout.DialogButton, Accent, 455, Layout.DialogButtonRadius, ConfirmEdge)
-  DrawTextMid(Dialog.Confirm, ConfirmX + ButtonWidth / 2, ButtonTextY, Accent, Layout.TextSize, BoldFont, 455, Fade)
+  if CancelHover then DrawRect(CancelX, ButtonY, ButtonWidth, Layout.DialogButton, Theme.Hover, 454, Layout.DialogButtonRadius, Fade) end
+  DrawStroke(CancelX, ButtonY, ButtonWidth, Layout.DialogButton, CancelHover and Theme.Mute or Theme.Rule2, 455, Layout.DialogButtonRadius, Fade)
+  DrawTextMid(Dialog.Cancel, CancelX + ButtonWidth / 2, ButtonTextY, Theme.Text, Layout.SmallSize, SystemFont, 456, (CancelHover and 1 or 0.85) * Fade)
+  DrawRect(ConfirmX, ButtonY, ButtonWidth, Layout.DialogButton, ConfirmHover and White or Accent, 454, Layout.DialogButtonRadius, Fade)
+  DrawTextMid(Dialog.Confirm, ConfirmX + ButtonWidth / 2, ButtonTextY, Theme.Background, Layout.SmallSize, BoldFont, 456, Fade)
 
   Input.Click = false
 
@@ -4614,9 +4586,9 @@ local PresetBackground = {
   Lemon = Color3.fromRGB(18, 17, 13),
 }
 
-local DefaultBackground = Color3.fromRGB(15, 15, 15)
+local DefaultBackground = Color3.fromRGB(0, 0, 0)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.9" }
+local InsUi = { _state = State, Version = "j5cks-2.0.0" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -5348,6 +5320,39 @@ function InsUi:SetTitle(title)
 end
 
 
+-- 2.0 additions. All optional; scripts written for 1.x never call them.
+-- SetStatus: short live text in the top bar ("fishing · 34 caught"). A function is called each frame.
+function InsUi:SetStatus(text)
+  State.Status = text
+
+  return self
+end
+
+
+-- SetFooter: a mono line along the bottom of the window ("world: night, clear"). Text or function.
+function InsUi:SetFooter(text)
+  State.Footer = text
+
+  return self
+end
+
+
+-- SetDescriptions(false) puts row tooltips back on hover instead of under each row.
+function InsUi:SetDescriptions(on)
+  State.ShowDescs = on ~= false
+
+  return self
+end
+
+
+-- tab:SetMeta("41 / 75") shows a short mono note to the right of the tab's name.
+function TabClass:SetMeta(text)
+  self.Meta = text ~= nil and tostring(text) or nil
+
+  return self
+end
+
+
 function InsUi:SetSize(width, height)
   State.W = math.max(Layout.MinWidth, width)
   State.H = math.max(Layout.MinHeight, height)
@@ -5912,7 +5917,7 @@ do
     DrawStroke(X, Y, Width, Height, Theme.Text, 161, Layout.BoxRadius, Alpha.CardStroke)
     DrawCircle(X + Layout.BoxDotX, Y + Layout.BoxTitle / 2, Layout.BoxDot, Theme.AccentA, 162, true, 1, Layout.BoxDotSides, 1)
     DrawText(box.Title, X + Layout.BoxTitleX, TitleY, Theme.Text, Layout.SmallSize, BoldFont, 162, Alpha.Text, Width - Layout.BoxTitleRoom)
-    GradientRect(X + Layout.BoxRuleInset, RuleY, RuleWidth, Layout.BoxRuleHeight, Theme.AccentA, Theme.AccentB, 162, Alpha.BoxRule)
+    DrawRect(X + Layout.BoxRuleInset, RuleY, RuleWidth, 1, Theme.Rule2, 162, 0, 1)
 
     for Index = 1, Count do
       local Line = Lines[Index]
@@ -6000,7 +6005,7 @@ do
     DrawRect(X, Y, Width, Height, Theme.Background, 150, Layout.HotkeyRadius, Alpha.HotkeyFill * Fade)
     DrawStroke(X, Y, Width, Height, Theme.Text, 151, Layout.HotkeyRadius, Alpha.CardStroke * Fade)
     DrawText("keybinds", X + Layout.HotkeyTitleX, Y + Layout.HotkeyTitleY, Theme.Text, Layout.SmallSize, BoldFont, 152, Alpha.Text * Fade, Width - Layout.HotkeyTitleRoom)
-    GradientRect(X + Layout.HotkeyRuleX, Y + Layout.HotkeyRuleY, Width - Layout.HotkeyRuleRoom, Layout.HotkeyRuleHeight, Theme.AccentA, Theme.AccentB, 152, Alpha.HotkeyRule * Fade)
+    DrawRect(X + Layout.HotkeyRuleX, Y + Layout.HotkeyRuleY, Width - Layout.HotkeyRuleRoom, 1, Theme.Rule2, 152, 0, Fade)
 
     for Index = 1, #List do
       local Item = List[Index]
@@ -6394,7 +6399,7 @@ do
     DrawStroke(X, Y, Width, Height, Theme.Text, 401, Layout.SpotRadius, Alpha.CardStroke * Fade)
     DrawCircle(X + Layout.SpotGlassX, Y + Layout.SpotGlassY, Layout.SpotGlass, Theme.Text, 402, false, Layout.SpotGlassThick, Layout.SpotGlassSides, Alpha.Label * Fade)
     DrawLine(X + Layout.SpotHandleX, Y + Layout.SpotHandleY, X + Layout.SpotHandleTipX, Y + Layout.SpotHandleTipY, Theme.Text, 402, Layout.SpotGlassThick, Alpha.Label * Fade)
-    GradientRect(X + Layout.SpotRuleX, Y + Layout.SpotRuleY, RuleWidth, Layout.SpotRuleHeight, Theme.AccentA, Theme.AccentB, 402, Alpha.SpotRule * Fade)
+    DrawRect(X + Layout.SpotRuleX, Y + Layout.SpotRuleY, RuleWidth, 1, Theme.Rule2, 402, 0, Fade)
     DrawSpotlightField(X, Y, Width, Fade)
 
     if Count == 0 then DrawText("no matches", X + Layout.SpotEmptyX, Y + Layout.SpotEmptyY, Theme.Text, Layout.TextSize, SystemFont, 402, Alpha.Dim * Fade, Width - Layout.SpotEmptyRoom) end
@@ -6772,6 +6777,7 @@ do
     local Effect = State.EffectColor
 
     Data.settings = {
+      skin = 2, -- 2.0 look; configs saved before it keep their values but not their colours
       accentA = { AccentA.R, AccentA.G, AccentA.B },
       accentB = { AccentB.R, AccentB.G, AccentB.B },
       bg = { Theme.Background.R, Theme.Background.G, Theme.Background.B },
@@ -6907,8 +6913,19 @@ do
     if data.layout then State.TabLayout = data.layout end
     if data.search then State.SearchStyle = data.search end
 
+    -- a config from before 2.0: its Theme / Appearance rows and the old sidebar switch would
+    -- bring the 1.x purple look back, so those rows keep their 2.0 defaults this once.
+    local Legacy = not (type(data.settings) == "table" and data.settings.skin == 2)
+    local Skip = { Theme = true, Appearance = true }
+
     EachSavedRow(function(key, row)
       local Saved = Flags[key]
+
+      if Legacy and SettingsTab then
+        local Section = string.match(key, "^" .. string.gsub(SettingsTab.Name, "%p", "%%%0") .. "%.([^%.]+)%.")
+
+        if Section and (Skip[Section] or row.Name == "Collapse sidebar") then Saved = nil end
+      end
 
       if Saved ~= nil then ApplyRow(row, Saved, Binds[key], Colors[key]) end
     end)
@@ -6917,6 +6934,15 @@ do
 
     if Settings then
       local Rainbow = Settings.rainbow == true
+
+      -- a config from before 2.0 carries the old purple theme, card alphas and a collapsing
+      -- sidebar: drop those so the new look shows; everything else (rows, keys, size) loads.
+      if Settings.skin ~= 2 then
+        Settings.accentA, Settings.accentB, Settings.bg, Settings.txt = nil, nil, nil, nil
+        Settings.cardStrk, Settings.hairline, Settings.cardFill, Settings.sidebarPinned = nil, nil, nil, nil
+        Settings.rainbow, Settings.glowMul, Settings.roundScale = nil, nil, nil
+        Rainbow = false
+      end
 
       if Settings.accentA and Settings.accentB then
         State.BaseAccentA = UnpackColor(Settings.accentA)

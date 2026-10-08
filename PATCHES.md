@@ -1,5 +1,17 @@
 # What this fork changes
 
+## j5cks-2.0.0 local candidate (2026-10-08)
+
+new default look, matching the website (adorablewhale.world): ink on black, Geist-style hierarchy with Matcha fonts, mono labels. same API: every 1.x script runs unchanged.
+
+- window: full-width top bar (title, version, live status, search, minimize/close), text tab list with a 2px ink marker and an optional mono meta, sub-tabs as an indented list, a footer line (script text + menu key). the sidebar stays open by default; "collapse sidebar" still gives the icon rail.
+- sections: mono label + hairline, description under it, no cards. rows are separated by hairlines and show their tooltip as a description under the row (up to 3 lines); `SetDescriptions(false)` restores hover tooltips.
+- controls: 30x16 pill switch, flat 16px checkbox with a tick, 1px slider track with an ink fill and rectangular thumb (value in mono, click to type), outlined buttons, raised fields, kbd-style key chips (a dot marks toggle/always), "risk" tag on risky toggles, flat notifications / tooltip / dialog (ink confirm button), thin scrollbar.
+- performance: gradients, fade lines, glows and halos are gone (each fade line was 10-26 draw objects per frame).
+- additive API: `lib:SetStatus(text|fn)`, `lib:SetFooter(text|fn)`, `lib:SetDescriptions(on)`, `tab:SetMeta(text)`.
+- configs: saved with `skin = 2`. a pre-2.0 config still loads its rows, keys, size and menu key, but not its old accent / background / card alphas / sidebar switch, so the new look shows once; after that, presets and colours save as before.
+- tests: the five existing suites pass; compile passes, 193 top-level locals. live: FischHub 2.6.5 loads it from INSUI/insui.lua.
+
 ## j5cks-1.4.9 (2026-10-07)
 
 Matcha menu hover preserves Roblox input/focus instead of entering AFK and dropping clicks. other executors retain input capture. IsInteracting() exposes active menu use so gameplay scripts yield simulated input without focus loss. synthetic releases expire through frame polling after a grace period and physical-up sample, avoiding release-tail clicks and stuck suppression. owner confirmed live clicks work; mouse tabs and reel-speed checkbox off/on verified with focus true/AFK absent. source regressions cover both buttons, delayed physical release, repress, interaction and legacy executor capture.

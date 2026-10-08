@@ -190,6 +190,18 @@ box:SetTitle("Session")   box:SetVisible(false)   box:Clear()   box:Remove()
 The box can be dragged by its title while the menu is open, and `box.X` / `box.Y` hold
 its position.
 
+## 2.0 additions
+
+```lua
+lib:SetStatus("fishing · 34 caught")        -- live text in the top bar (or a function, called each frame)
+lib:SetFooter(function() return "world  night · clear" end) -- mono line along the bottom
+lib:SetDescriptions(false)                   -- row tooltips on hover instead of under each row
+fishingTab:SetMeta("on")                     -- short mono note to the right of a tab's name
+```
+
+Row tooltips (the last argument of Toggle, Slider, Dropdown, Textbox, Button, Keybind) show as a
+description under the row by default.
+
 ## Look
 
 ```lua
