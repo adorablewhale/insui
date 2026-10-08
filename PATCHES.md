@@ -1,5 +1,9 @@
 # What this fork changes
 
+## j5cks-1.4.9 (2026-10-07)
+
+Matcha menu hover preserves Roblox input/focus instead of entering AFK and dropping clicks. other executors retain input capture. IsInteracting() exposes active menu use so gameplay scripts yield simulated input without focus loss. synthetic releases expire through frame polling after a grace period and physical-up sample, avoiding release-tail clicks and stuck suppression. owner confirmed live clicks work; mouse tabs and reel-speed checkbox off/on verified with focus true/AFK absent. source regressions cover both buttons, delayed physical release, repress, interaction and legacy executor capture.
+
 ## j5cks-1.4.8 (2026-10-07)
 
 closing a menu while typing a slider/textbox or capturing a bind could leave edit focus behind. the menu key and all feature hotkeys then stayed blocked while the hud kept running. close/minimize/toggle/SetOpen share input cleanup; the frame loop repairs hidden orphaned editors/captures, preserving modal/spotlight editing. unfinished slider edits are cancelled without invoking their callback. the actual-source regression fails the old version and passes the fix; live P opens and V activates auto fish after reproducing a closed slider, then auto fish restored off. published library also includes the prior overlay-position and SyntheticMouse additions. loader recovery source remains a separate local candidate.

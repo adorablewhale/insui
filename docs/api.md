@@ -245,6 +245,12 @@ toGame(function() keypress(0x45) end)
 `gameInput = false` holds input back the whole time the menu is open. `true` releases it
 whenever the cursor leaves the window and no popup is open. `"always"` never holds it back.
 
+On Matcha, all three settings keep Roblox input enabled: its global blocker makes
+Roblox lose in-game focus and marks the player AFK. Use `Lib:IsInteracting()` to
+yield simulated mouse/key input while the cursor is over the open menu, an editor
+is active, or a popup/dialog is open. Real foreground focus guards still apply.
+Other executors retain the capture policies above.
+
 ## Search
 
 Click the box in the title bar and type to jump to any widget in any tab. This fork has no

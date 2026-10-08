@@ -1372,15 +1372,22 @@ function Fix.Mouse2Down()
   return uis:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
 end
 
+-- Release suppression expires here, not in a task.delay callback. Wait for an actual
+-- button-up sample too, so a late simulated release cannot become a menu click.
+function Fix.MouseForMenu(button, down)
+  local blocked = Input.Synthetic[button]
+  if type(blocked) == "number" and os.clock() >= blocked and not down then
+    Input.Synthetic[button] = nil
+    blocked = nil
+  end
+  return not blocked and down
+end
+
 local function ReadInput()
   local WasDown, WasRight = Input.Down, Input.RightDown
-
   Input.X, Input.Y = Mouse.X, Mouse.Y
-  -- A script holding simulated buttons (auto casting, reel control) would otherwise click
-  -- whatever row sits under the cursor: those buttons don't count while it says so.
-  local Synthetic = Input.Synthetic
-  Input.Down = not Synthetic.m1 and Fix.Mouse1Down()
-  Input.RightDown = not Synthetic.m2 and Fix.Mouse2Down()
+  Input.Down = Fix.MouseForMenu("m1", Fix.Mouse1Down())
+  Input.RightDown = Fix.MouseForMenu("m2", Fix.Mouse2Down())
   Input.Click = Input.Down and not WasDown
   Input.Right = Input.RightDown and not WasRight
   Input.Up = WasDown and not Input.Down
@@ -4609,7 +4616,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.8" }
+local InsUi = { _state = State, Version = "j5cks-1.4.9" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -5514,7 +5521,10 @@ end
 -- lib:SyntheticMouse("m1" | "m2", held): the script pressed/released a simulated mouse button.
 -- While held, that button is ignored by the menu so it can't click rows under the cursor.
 function InsUi:SyntheticMouse(button, held)
-  if button == "m1" or button == "m2" then Input.Synthetic[button] = held == true or nil end
+  if button == "m1" or button == "m2" then
+    if held == true then Input.Synthetic[button] = true
+    elseif Input.Synthetic[button] then Input.Synthetic[button] = os.clock() + 0.1 end
+  end
   return self
 end
 
@@ -5525,6 +5535,17 @@ function InsUi:SetGameInput(on)
   ApplyInputState(true)
 
   return self
+end
+
+
+-- Scripts can yield their simulated input while the user works in the menu,
+-- without disabling Roblox input or mistaking the menu for another window.
+function InsUi:IsInteracting()
+  if not State.RobloxFocused then return false end
+  if State.Dialog or State.SpotlightOpen then return true end
+  if not State.Open or State.Rolled then return false end
+  return State.Focus ~= nil or State.Capture ~= nil or State.Dropdown ~= nil
+    or State.Picker ~= nil or State.Menu ~= nil or IsMouseIn(State.X, State.Y, State.W, State.H)
 end
 
 
@@ -7222,6 +7243,12 @@ end
 
 
 do
+  -- Matcha's global input blocker makes Roblox lose in-game focus (and reports
+  -- AFK); the next frame then rejects our own menu clicks. Preserve foreground
+  -- focus instead. Normal focus guards still reject input in other applications.
+  local okExecutor, executor = pcall(function() return identifyexecutor() end)
+  Fix.MatchaInput = okExecutor and tostring(executor):lower():find("matcha", 1, true) ~= nil
+
   local function GameCaptures()
     if State.Dialog then return true end
     if not State.Open or State.Rolled then return false end
@@ -7234,7 +7261,7 @@ do
 
 
   function ApplyInputState(force)
-    local ToGame = not GameCaptures()
+    local ToGame = Fix.MatchaInput or not GameCaptures()
 
     if not force and State.InputSent == ToGame then return end
 
