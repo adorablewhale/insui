@@ -1,5 +1,15 @@
 # What this fork changes
 
+## j5cks-1.4.8 (2026-10-07)
+
+closing a menu while typing a slider/textbox or capturing a bind could leave edit focus behind. the menu key and all feature hotkeys then stayed blocked while the hud kept running. close/minimize/toggle/SetOpen share input cleanup; the frame loop repairs hidden orphaned editors/captures, preserving modal/spotlight editing. unfinished slider edits are cancelled without invoking their callback. the actual-source regression fails the old version and passes the fix; live P opens and V activates auto fish after reproducing a closed slider, then auto fish restored off. published library also includes the prior overlay-position and SyntheticMouse additions. loader recovery source remains a separate local candidate.
+
+## j5cks-1.4.7 local candidate (2026-10-07)
+
+keybind overlay dragged position round-trips through configs, validates finite coordinates and cancels dragging on load. existing configs remain compatible. isolated live save/load and actual-source regression pass; post-reload config restores position/visibility; visual drag check pending. loader recovery exposes explicit one-session run and persistent enable without deleting files. public stays1.4.6.
+
+also in the 1.4.7 candidate: `lib:SyntheticMouse("m1"|"m2", held)`. menus read the physical button state, so a script's own simulated clicks (auto casting, reel control) could toggle whatever row was under the cursor. while a script says it holds a button, the menu ignores that button. FischHub 2.6.5 local calls it from its Input layer. compile passes, 193 locals; not live-click-tested yet.
+
 ## j5cks-1.4.6 (2026-10-06)
 
 unwatched cloud sessions sync every 60 seconds instead of 30. watched dashboards

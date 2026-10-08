@@ -1341,6 +1341,7 @@ local Input = {
   Click = false,
   Right = false,
   Up = false,
+  Synthetic = {}, -- simulated buttons a script is holding (InsUi:SyntheticMouse)
 }
 
 
@@ -1375,8 +1376,11 @@ local function ReadInput()
   local WasDown, WasRight = Input.Down, Input.RightDown
 
   Input.X, Input.Y = Mouse.X, Mouse.Y
-  Input.Down = Fix.Mouse1Down()
-  Input.RightDown = Fix.Mouse2Down()
+  -- A script holding simulated buttons (auto casting, reel control) would otherwise click
+  -- whatever row sits under the cursor: those buttons don't count while it says so.
+  local Synthetic = Input.Synthetic
+  Input.Down = not Synthetic.m1 and Fix.Mouse1Down()
+  Input.RightDown = not Synthetic.m2 and Fix.Mouse2Down()
   Input.Click = Input.Down and not WasDown
   Input.Right = Input.RightDown and not WasRight
   Input.Up = WasDown and not Input.Down
@@ -1551,6 +1555,32 @@ local function ReleaseDrags()
   State.Spotlight.BarDrag = nil
 end
 
+
+-- Closed windows cannot keep swallowing keys through an abandoned edit/capture.
+-- Do not commit a half-typed slider value or dismiss an independent modal/search.
+function Fix.ClearEditing()
+  local editing = State.Focus
+  if type(editing) == "table" and editing.Kind == "Slider" then editing.Typing, editing.Anchor = nil, nil end
+  if type(State.Capture) == "table" then State.Capture.Listening = false end
+  State.Focus, State.Capture, State.RepeatKey = nil, nil, nil
+  State.RepeatAt = 0
+end
+
+function Fix.RepairHiddenInput()
+  if not State.Open and not State.SpotlightOpen and not State.Dialog and (State.Focus or State.Capture) then
+    Fix.ClearEditing()
+  end
+end
+
+function Fix.SetOpen(open)
+  open = open == true
+  if (not open or not State.Open) and not State.SpotlightOpen and not State.Dialog then Fix.ClearEditing() end
+  State.Open = open
+  if not open then
+    State.Dropdown, State.Picker, State.Menu = nil, nil, nil
+    ReleaseDrags()
+  end
+end
 
 local function ReadKeys()
   local okFocus, focused = pcall(function() return isrbxactive() end)
@@ -2210,8 +2240,7 @@ end
 
 local function Minimize()
   -- FIX: minimize hides the window outright (no 3-line bubble); the menu key brings it back
-  State.Open = false
-  State.Dropdown, State.Picker, State.Menu, State.Focus = nil, nil, nil, nil
+  Fix.SetOpen(false)
   if true then return end
   State.Rolled = not State.Rolled
 
@@ -2228,7 +2257,7 @@ end
 local function DrawHeader(rail)
   DrawSearchBar(rail)
 
-  if ControlButton(State.X + State.W - 21, "Close") and Input.Click then State.Open = false Input.Click = false end
+  if ControlButton(State.X + State.W - 21, "Close") and Input.Click then Fix.SetOpen(false) Input.Click = false end
   if ControlButton(State.X + State.W - 46, "Min") and Input.Click then Minimize() Input.Click = false end
 end
 
@@ -4580,7 +4609,7 @@ local PresetBackground = {
 
 local DefaultBackground = Color3.fromRGB(15, 15, 15)
 
-local InsUi = { _state = State, Version = "j5cks-1.4.6" }
+local InsUi = { _state = State, Version = "j5cks-1.4.8" }
 local Window
 local ApplyOptions
 local WindowClass = {}
@@ -5343,7 +5372,7 @@ end
 
 
 function InsUi:Toggle()
-  State.Open = not State.Open
+  Fix.SetOpen(not State.Open)
   return self
 end
 
@@ -5371,7 +5400,7 @@ function InsUi:Destroy()
   if Fix.HelperDestroy then Fix.HelperDestroy() end
   if State.AutoSave then pcall(function() InsUi:SaveConfig(State.ConfigName) end) end
   State.Alive = false
-  State.Open = false
+  Fix.SetOpen(false)
 
   Fix.DropPictures()
 
@@ -5447,7 +5476,7 @@ end
 
 
 function InsUi:SetOpen(open)
-  State.Open = open == true
+  Fix.SetOpen(open)
   return self
 end
 
@@ -5478,6 +5507,14 @@ end
 function InsUi:SetBackgroundEffectColor(color)
   State.EffectColor = color
 
+  return self
+end
+
+
+-- lib:SyntheticMouse("m1" | "m2", held): the script pressed/released a simulated mouse button.
+-- While held, that button is ignored by the menu so it can't click rows under the cursor.
+function InsUi:SyntheticMouse(button, held)
+  if button == "m1" or button == "m2" then Input.Synthetic[button] = held == true or nil end
   return self
 end
 
@@ -6726,6 +6763,7 @@ do
       hoverEffects = State.HoverEffects ~= false,
       checkboxStyle = State.CheckboxStyle == true,
       hotkeyEnabled = State.HotkeyShown ~= false,
+      hotkeyPos = State.HotkeyPos and { State.HotkeyPos.X, State.HotkeyPos.Y } or nil,
       menuKey = State.MenuKey,
       w = State.W,
       h = State.H,
@@ -6878,6 +6916,11 @@ do
       if Settings.hoverEffects ~= nil then State.HoverEffects = Settings.hoverEffects ~= false end
       if Settings.checkboxStyle ~= nil then State.CheckboxStyle = Settings.checkboxStyle == true end
       if Settings.hotkeyEnabled ~= nil then State.HotkeyShown = Settings.hotkeyEnabled ~= false end
+      local Pos = Settings.hotkeyPos
+      if type(Pos) == "table" and type(Pos[1]) == "number" and type(Pos[2]) == "number"
+        and Pos[1] == Pos[1] and Pos[2] == Pos[2] and math.abs(Pos[1]) < 1e6 and math.abs(Pos[2]) < 1e6 then
+        State.HotkeyPos, State.HotkeyDrag = { X = Pos[1], Y = Pos[2] }, nil
+      end -- the renderer clamps it to the current viewport; old configs keep the current position
       if Settings.glowMul then State.Glow = Settings.glowMul end
       if Settings.lite ~= nil then State.Lite = Settings.lite == true end
       if Settings.smartFps ~= nil then State.SmartFps = Settings.smartFps ~= false end
@@ -7866,6 +7909,7 @@ task.spawn(function()
     ResetFrame()
     ReadInput()
     ReadKeys()
+    Fix.RepairHiddenInput()
     if not State.RobloxFocused then
       Input.Up = Input.Up or Input.Down
       Input.Down, Input.Click, Input.RightDown, Input.Right = false, false, false, false
@@ -7887,7 +7931,7 @@ task.spawn(function()
 
     local MenuKey = Keys[State.MenuKey]
 
-    if MenuKey and MenuKey.Click and not State.Focus and not State.Capture then State.Open = not State.Open end
+    if MenuKey and MenuKey.Click and not State.Focus and not State.Capture then Fix.SetOpen(not State.Open) end
 
     local Editing = State.Focus
 

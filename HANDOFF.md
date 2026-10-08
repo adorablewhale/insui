@@ -1,3 +1,13 @@
+# insui 1.4.8 input hotfix - 2026-10-07
+
+live user bug: menu closed with State.Focus still the reel-speed Slider, suppressing P/menu and every feature bind. clearing it immediately restored P. source close/minimize/Toggle/SetOpen cleanup plus per-frame orphan repair now cancel hidden edits/captures while preserving active modal/spotlight editors. test_hidden_edit_focus.py fails original1.4.7 and passes fix; overlay/loader suites still pass, compile/193locals. patched live library reproduced stale-slider close: focus/Typing cleared, Value preserved; P opens after initial controller calibration; V started auto fish then Stop restored off. rollout: public INSUI1.4.8 and private beta2.6.5-beta.2 matching library. loader.lua recovery remains local/unpublished. older checkpoints below are historical.
+
+# insui local checkpoint - 2026-10-07
+
+- local j5cks-1.4.7: validated dragged keybind overlay position in PackConfig/ApplyConfig; legacy/malformed input ignored, drag cancelled on load. actual-source regression fails old copy and passes new; isolated live save/load round-trip passed. original config restored. post-reload saved config also restored 430,620/hidden and original config restored; visual drag check pending. source/runtime copies match; compile/193 locals pass.
+- loader sources (this repo and kit Matcha/loader) match: disabled autoexec has actionable gear message, MatchaLoader.Run() one-session recovery and Enable() preserving saved scripts. eight source scenarios pass; existing disabled choice respected. real restart/root trigger not verified. installed candidate C:/matcha/autoexec/insui_loader.lua (directory previously empty); two live runs chose local Fisch2.6.5/INSUI1.4.7 and finished. actual game restart remains unverified. no public release; current public1.4.6.
+- owner authorized graph refresh; local new work supersedes historical candidate references below. Fisch feature continuation: HANDOFF_FEATURES_2026-10-07.md.
+
 # insui handoff - 2026-10-06
 
 - j5cks-1.4.6 published at 1480449; anonymous public bytes match the release commit.
