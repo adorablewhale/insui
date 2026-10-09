@@ -1,3 +1,10 @@
+# october 9: cloud sync cadence for the free plan (pushed to main, no version bump)
+
+- watched sync (someone has the dashboard open) is every 15 seconds, was 5. the cloudflare free plan caps requests at 100k a day, and 5 seconds per running script used most of it. normal sync stays 60 seconds.
+- tests/test_cloud_cadence.lua expects 15 seconds and passes in matcha against this insui.lua.
+- the public loader and FischHub bootstrap load insui from the main branch, so this change reaches players on their next load. nothing else changed in this file.
+- loader.lua and tests/test_loader_recovery.py had earlier uncommitted work from another session; they were NOT committed here.
+
 # october 8: quiet update notifier (j5cks-2.0.1 local, unpublished)
 
 - owner: only alert about reinjection when the UI is open, to protect sleeping users' macros. background version polling now queues per-script offers without toast/dialog/input changes. `Fix.UpdateShow` delivers before the polling timer guard once the menu is open, expanded, focused and not editing/showing another popup. newest queued version replaces older pending version; seen only on presentation. no-url offers explain reinjection. only explicit reload executes downloaded code.
@@ -29,7 +36,7 @@ live user bug: menu closed with State.Focus still the reel-speed Slider, suppres
 # insui handoff - 2026-10-06
 
 - j5cks-1.4.6 published at 1480449; anonymous public bytes match the release commit.
-- normal cloud sync 60 seconds; watched sync remains 5 seconds. quiet deferral stays
+- normal cloud sync 60 seconds; watched sync is 15 seconds (was 5, changed 2026-10-09 for the cloudflare free plan's request limits; see the top section). quiet deferral stays
   capped at 45 seconds (normal maximum gap 105 seconds plus network time).
 - tests/test_cloud_cadence.lua is an isolated Matcha scheduler regression, no network
   or consent writes. new code passes, old code fails. compile and 193 locals pass.

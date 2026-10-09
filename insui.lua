@@ -7853,8 +7853,9 @@ function Fix.CloudStep()
         end
         Fix.CloudLaunch(h)
       end
-      -- someone has the dashboard open: sync every 5 s so remote changes apply almost at once
-      if watched then Fix.CloudNext = math.min(Fix.CloudNext, os.clock() + 5) Fix.CloudStatus = "online (live: dashboard open)" end
+      -- someone has the dashboard open: sync every 15 s so remote changes apply soon. (5 s hit the free
+      -- plan's 100k requests a day with a few scripts; 15 s keeps the live feel and cuts that by a third)
+      if watched then Fix.CloudNext = math.min(Fix.CloudNext, os.clock() + 15) Fix.CloudStatus = "online (live: dashboard open)" end
     end)
     if not ok then Fix.CloudStatus, Fix.CloudNext = "offline", os.clock() + 60 end
     Fix.CloudBusy = false
